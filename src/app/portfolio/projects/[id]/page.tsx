@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import "../../../../projects.css";
 import { notFound } from "next/navigation";
 import type { Project } from "../../../../../types/project";
 
@@ -11,7 +12,7 @@ type ProjectPageProps = {
 
 function getSectionLabel(code: string) {
   if (code === "00") return "Table of contents";
-  if (["1",  "2", "3"].includes(code)) return "Main projects";
+  if (["1", "2", "3"].includes(code)) return "Main projects";
   if (["4", "5", "6"].includes(code)) return "Complementary projects";
   if (code === "7") return "Back cover & contact";
   return "Project";
@@ -133,18 +134,18 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
   if (!projectNode) {
     return (
       <div
-        className="relative min-h-[100svh] font-sans"
-        style={{ backgroundColor: "#0C1222" }}
+        className="relative min-h-[100svh] font-sans text-[#2B4673]"
+        style={{ backgroundColor: "#EDE7E3" }}
       >
-        <div className="portfolio-grain" aria-hidden />
-        <div className="portfolio-grid" aria-hidden />
-        <div className="relative z-10 mx-auto max-w-3xl px-6 py-16 text-center text-zinc-200">
-          <p className="mb-6 text-sm uppercase tracking-widest text-zinc-500">
+        <div className="portfolio-grain-light" aria-hidden />
+        <div className="portfolio-grid-light" aria-hidden />
+        <div className="relative z-10 mx-auto max-w-3xl px-6 py-16 text-center">
+          <p className="mb-6 text-sm uppercase tracking-widest opacity-70">
             Project not found
           </p>
           <Link
             href="/portfolio"
-            className="text-sm font-medium text-zinc-300 underline underline-offset-4 hover:text-white"
+            className="text-sm font-medium underline underline-offset-4 hover:opacity-70"
           >
             ← Back to portfolio
           </Link>
@@ -168,41 +169,38 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
 
   return (
     <div
-      className="relative min-h-[100svh] font-sans"
-      style={{ backgroundColor: "#0C1222" }}
+      className="project relative min-h-[100svh] font-sans text-[#2B4673]"
+      style={{ backgroundColor: "#EDE7E3" }}
     >
-      <div className="portfolio-grain" aria-hidden />
-      <div className="portfolio-grid" aria-hidden />
+      <div className="portfolio-grain-light" aria-hidden />
+      <div className="portfolio-grid-light" aria-hidden />
 
-      <div className="relative z-10 mx-auto max-w-3xl px-6 py-16">
-        <Link
-          href="/portfolio"
-          className="text-sm font-medium text-zinc-400 transition-colors hover:text-white"
-        >
-          ← Back to portfolio
-        </Link>
-
-        <article className="mt-8 rounded-xl border border-zinc-800 bg-black/30 p-6 sm:p-8">
+      <div className="relative z-10 mx-auto max-w-3xl">
+        <article className="mt-8  bg-white/70 p-6 sm:p-8">
+          <span className="bracket top-0 left-0 absolute w-5 h-5 border-t-2 border-l-2 border-blue-800 opacity-100"></span>
+          <span className="bracket top-0 right-0 absolute w-5 h-5 border-t-2 border-r-2 border-blue-800 opacity-100"></span>
+          <span className="bracket bottom-0 left-0 absolute w-5 h-5 border-b-2 border-l-2 border-blue-800 opacity-100"></span>
+          <span className="bracket bottom-0 right-0 absolute w-5 h-5 border-b-2 border-r-2 border-blue-800 opacity-100"></span>
           {/* Masthead */}
-          <header className="border-b border-zinc-800 pb-6">
-            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-zinc-500">
+          <header className="border-b border-zinc-300 pb-6">
+            <p className="text-xs font-semibold uppercase tracking-[0.3em] opacity-70">
               {project.domain.toUpperCase()} • {getSectionLabel(project.pcode)}
             </p>
-            <h1 className="mt-3 font-heading text-2xl font-bold tracking-tight text-white sm:text-3xl">
+            <h1 className="mt-3 font-heading text-2xl font-bold tracking-tight sm:text-3xl">
               {project.name}
             </h1>
             {project.summary && (
-              <p className="mt-4 max-w-2xl text-sm leading-relaxed text-zinc-300 sm:text-base">
+              <p className="mt-4 max-w-2xl text-sm leading-relaxed italic text-[#2B4673] opacity-75 sm:text-base">
                 {project.summary}
               </p>
             )}
           </header>
 
           {/* Meta grid */}
-          <section className="mt-6 grid gap-6 text-xs text-zinc-300 sm:grid-cols-3">
+          <section className="overview mt-6 grid gap-6 text-xs sm:grid-cols-3">
             <dl className="space-y-2">
               <div>
-                <dt className="text-[0.65rem] uppercase tracking-[0.25em] text-zinc-500">
+                <dt className="text-[0.65rem] uppercase tracking-[0.25em] opacity-70">
                   Location
                 </dt>
                 <dd>
@@ -210,7 +208,7 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
                 </dd>
               </div>
               <div>
-                <dt className="text-[0.65rem] uppercase tracking-[0.25em] text-zinc-500">
+                <dt className="text-[0.65rem] uppercase tracking-[0.25em] opacity-70">
                   Site
                 </dt>
                 <dd>{project.site.location}</dd>
@@ -219,7 +217,7 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
 
             <dl className="space-y-2">
               <div>
-                <dt className="text-[0.65rem] uppercase tracking-[0.25em] text-zinc-500">
+                <dt className="text-[0.65rem] uppercase tracking-[0.25em] opacity-70">
                   Years
                 </dt>
                 <dd>
@@ -231,7 +229,7 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
               </div>
               {project.intervention.area && (
                 <div>
-                  <dt className="text-[0.65rem] uppercase tracking-[0.25em] text-zinc-500">
+                  <dt className="text-[0.65rem] uppercase tracking-[0.25em] opacity-70">
                     Area
                   </dt>
                   <dd>{project.intervention.area.toLocaleString()} m²</dd>
@@ -242,7 +240,7 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
             <dl className="space-y-2">
               {project.intervention.collaborators.length > 0 && (
                 <div>
-                  <dt className="text-[0.65rem] uppercase tracking-[0.25em] text-zinc-500">
+                  <dt className="text-[0.65rem] uppercase tracking-[0.25em] opacity-70">
                     Collaborators
                   </dt>
                   <dd>{project.intervention.collaborators.join(", ")}</dd>
@@ -250,10 +248,21 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
               )}
               {project.tags.length > 0 && (
                 <div>
-                  <dt className="text-[0.65rem] uppercase tracking-[0.25em] text-zinc-500">
+                  <dt className="text-[0.65rem] uppercase tracking-[0.25em] opacity-70">
                     Keywords
                   </dt>
-                  <dd>{project.tags.join(" • ")}</dd>
+                  <dd className="mt-2">
+                    <div className="flex flex-wrap gap-2">
+                      {project.tags.map((tag) => (
+                        <span
+                          key={tag}
+                          className="inline-flex items-center rounded-md border border-[#2B4673]/30 bg-[#D0D5DB] px-2.5 py-0.5 text-xs font-semibold text-[#2B4673] transition-colors"
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  </dd>
                 </div>
               )}
             </dl>
@@ -261,7 +270,7 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
 
           {/* Hero image */}
           {cover?.url && (
-            <figure className="mt-8 overflow-hidden rounded-lg border border-zinc-800 bg-black/40">
+            <figure className="mt-8 overflow-hidden rounded-lg border border-zinc-300 bg-white/60">
               <Image
                 src={
                   cover.url.startsWith("http")
@@ -277,10 +286,10 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
           )}
 
           {/* Narrative sections */}
-          <section className="mt-10 space-y-8 text-sm leading-relaxed text-zinc-300 sm:text-base">
+          <section className="mt-10 space-y-8 text-sm leading-relaxed sm:text-base">
             {project.overview.context && (
               <section>
-                <h2 className="font-heading text-xs font-semibold uppercase tracking-[0.3em] text-zinc-500">
+                <h2 className="font-heading text-xs font-semibold uppercase tracking-[0.3em] opacity-70">
                   Context
                 </h2>
                 <p className="mt-3 whitespace-pre-line">
@@ -291,7 +300,7 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
 
             {project.overview.challenges && (
               <section>
-                <h2 className="font-heading text-xs font-semibold uppercase tracking-[0.3em] text-zinc-500">
+                <h2 className="font-heading text-xs font-semibold uppercase tracking-[0.3em] opacity-70">
                   Challenges
                 </h2>
                 <p className="mt-3 whitespace-pre-line">
@@ -302,7 +311,7 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
 
             {project.overview.approach && (
               <section>
-                <h2 className="font-heading text-xs font-semibold uppercase tracking-[0.3em] text-zinc-500">
+                <h2 className="font-heading text-xs font-semibold uppercase tracking-[0.3em] opacity-70">
                   Approach
                 </h2>
                 <p className="mt-3 whitespace-pre-line">
@@ -313,7 +322,7 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
 
             {project.overview.results && (
               <section>
-                <h2 className="font-heading text-xs font-semibold uppercase tracking-[0.3em] text-zinc-500">
+                <h2 className="font-heading text-xs font-semibold uppercase tracking-[0.3em] opacity-70">
                   Results
                 </h2>
                 <p className="mt-3 whitespace-pre-line">
@@ -326,7 +335,7 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
               <section className="grid gap-8 sm:grid-cols-2">
                 {project.overview.learnings && (
                   <div>
-                    <h2 className="font-heading text-xs font-semibold uppercase tracking-[0.3em] text-zinc-500">
+                    <h2 className="font-heading text-xs font-semibold uppercase tracking-[0.3em] opacity-70">
                       Learnings
                     </h2>
                     <p className="mt-3 whitespace-pre-line">
@@ -336,7 +345,7 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
                 )}
                 {project.overview.nextSteps && (
                   <div>
-                    <h2 className="font-heading text-xs font-semibold uppercase tracking-[0.3em] text-zinc-500">
+                    <h2 className="font-heading text-xs font-semibold uppercase tracking-[0.3em] opacity-70">
                       Next steps
                     </h2>
                     <p className="mt-3 whitespace-pre-line">
@@ -349,35 +358,27 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
           </section>
 
           {/* Key stages & technical flags */}
-          <section className="mt-10 grid gap-8 border-t border-zinc-800 pt-6 text-xs text-zinc-300 sm:grid-cols-2">
+          <section className="mt-10 grid gap-8 border-t border-zinc-300 pt-6 text-xs sm:grid-cols-2">
             {project.keyStages && (
               <div>
-                <h2 className="font-heading text-[0.7rem] font-semibold uppercase tracking-[0.3em] text-zinc-500">
+                <h2 className="font-heading text-[0.7rem] font-semibold uppercase tracking-[0.3em] opacity-70">
                   Project timeline
                 </h2>
                 <ol className="mt-4 space-y-2">
                   <li>
-                    <span className="font-semibold text-zinc-200">
-                      Initiation:
-                    </span>{" "}
+                    <span className="font-semibold">Initiation:</span>{" "}
                     {project.keyStages.initiation}
                   </li>
                   <li>
-                    <span className="font-semibold text-zinc-200">
-                      Planning:
-                    </span>{" "}
+                    <span className="font-semibold">Planning:</span>{" "}
                     {project.keyStages.planning}
                   </li>
                   <li>
-                    <span className="font-semibold text-zinc-200">
-                      Execution:
-                    </span>{" "}
+                    <span className="font-semibold">Execution:</span>{" "}
                     {project.keyStages.execution}
                   </li>
                   <li>
-                    <span className="font-semibold text-zinc-200">
-                      Completion:
-                    </span>{" "}
+                    <span className="font-semibold">Completion:</span>{" "}
                     {project.keyStages.completion}
                   </li>
                 </ol>
@@ -385,44 +386,44 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
             )}
 
             <div>
-              <h2 className="font-heading text-[0.7rem] font-semibold uppercase tracking-[0.3em] text-zinc-500">
+              <h2 className="font-heading text-[0.7rem] font-semibold uppercase tracking-[0.3em] opacity-70">
                 Technical profile
               </h2>
               <dl className="mt-4 space-y-1">
                 <div>
-                  <dt className="inline text-zinc-400">Scale:</dt>{" "}
+                  <dt className="inline opacity-70">Scale:</dt>{" "}
                   <dd className="inline capitalize">{project.scale}</dd>
                 </div>
                 <div>
-                  <dt className="inline text-zinc-400">Status:</dt>{" "}
+                  <dt className="inline opacity-70">Status:</dt>{" "}
                   <dd className="inline capitalize">{project.status}</dd>
                 </div>
                 <div>
-                  <dt className="inline text-zinc-400">Regional materials:</dt>{" "}
+                  <dt className="inline opacity-70">Regional materials:</dt>{" "}
                   <dd className="inline">
                     {project.intervention.usesRegionalMaterials ? "Yes" : "No"}
                   </dd>
                 </div>
                 <div>
-                  <dt className="inline text-zinc-400">Computational tools:</dt>{" "}
+                  <dt className="inline opacity-70">Computational tools:</dt>{" "}
                   <dd className="inline">
                     {project.intervention.wasComputated ? "Used" : "Not used"}
                   </dd>
                 </div>
                 <div>
-                  <dt className="inline text-zinc-400">Prototype built:</dt>{" "}
+                  <dt className="inline opacity-70">Prototype built:</dt>{" "}
                   <dd className="inline">
                     {project.intervention.wasPrototyped ? "Yes" : "No"}
                   </dd>
                 </div>
                 <div>
-                  <dt className="inline text-zinc-400">Regenerative focus:</dt>{" "}
+                  <dt className="inline opacity-70">Regenerative focus:</dt>{" "}
                   <dd className="inline">
                     {project.intervention.isRegenerative ? "Yes" : "No"}
                   </dd>
                 </div>
                 <div>
-                  <dt className="inline text-zinc-400">Sustainable design:</dt>{" "}
+                  <dt className="inline opacity-70">Sustainable design:</dt>{" "}
                   <dd className="inline">
                     {project.intervention.isSustainable ? "Yes" : "No"}
                   </dd>
@@ -434,16 +435,16 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
           {(prevCode || nextCode) && (
             <nav
               aria-label="Project navigation"
-              className="mt-10 flex flex-col gap-4 border-t border-zinc-800 pt-6 text-sm text-zinc-300 sm:flex-row sm:items-center sm:justify-between"
+              className="mt-10 flex flex-col gap-4 border-t border-zinc-300 pt-6 text-sm sm:flex-row sm:items-center sm:justify-between"
             >
-              <div className="text-xs uppercase tracking-[0.25em] text-zinc-500">
+              <div className="text-xs uppercase tracking-[0.25em] opacity-70">
                 {getSectionLabel(id)}
               </div>
               <div className="flex flex-wrap gap-3 sm:gap-4">
                 {prevCode && (
                   <Link
                     href={`/portfolio/projects/${prevCode}`}
-                    className="inline-flex items-center rounded-full border border-zinc-700 px-3 py-1 text-xs font-medium text-zinc-200 transition-colors hover:border-zinc-400 hover:bg-zinc-900"
+                    className="inline-flex items-center rounded-full border border-zinc-500 px-3 py-1 text-xs font-medium transition-colors hover:border-zinc-700 hover:bg-zinc-200/60"
                   >
                     ← Previous ({getSectionLabel(prevCode)})
                   </Link>
@@ -451,7 +452,7 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
                 {nextCode && (
                   <Link
                     href={`/portfolio/projects/${nextCode}`}
-                    className="inline-flex items-center rounded-full border border-zinc-700 px-3 py-1 text-xs font-medium text-zinc-200 transition-colors hover:border-zinc-400 hover:bg-zinc-900"
+                    className="inline-flex items-center rounded-full border border-zinc-500 px-3 py-1 text-xs font-medium transition-colors hover:border-zinc-700 hover:bg-zinc-200/60"
                   >
                     Next ({getSectionLabel(nextCode)}) →
                   </Link>

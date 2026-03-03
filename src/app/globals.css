@@ -36,6 +36,8 @@
   background-size: clamp(24px, 6vmin, 56px) clamp(24px, 6vmin, 56px);
 }
 
+
+
 .blueprint-container {
   position: relative;
 }
