@@ -1,39 +1,20 @@
-"use client";
+"use server";
 
 import Link from "next/link";
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import CountdownTimer from "./CountdownTimer";
+import { Suspense } from "react";
+import Projects from "./Projects";
 
-function getTimeLeft(endDate: Date) {
-  const now = new Date();
-  const diff = endDate.getTime() - now.getTime();
-  if (diff <= 0) {
-    return { days: 0, hours: 0, minutes: 0, seconds: 0 };
-  }
-  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-  const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-  const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-  const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-  return { days, hours, minutes, seconds };
-}
-
-function useCountdown(targetDate: Date) {
-  const [timeLeft, setTimeLeft] = useState(() => getTimeLeft(targetDate));
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setTimeLeft(getTimeLeft(targetDate));
-    }, 1000);
-    return () => clearInterval(timer);
-  }, [targetDate]);
-
-  return timeLeft;
-}
-
-export default function Portfolio() {
-  const launchDay = new Date("2026-03-08T00:00:00-06:00");
-  const { days, hours, minutes, seconds } = useCountdown(launchDay);
-
+export default async function Portfolio() {
+  const getProjects = async () => {
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_STRAPI_URL}/api/projects?populate=*`,
+    );
+    const projects = await response.json();
+    return projects;
+  };
+const projects = getProjects();
   return (
     <div
       className="relative min-h-[100svh] font-sans overflow-hidden"
@@ -80,32 +61,7 @@ export default function Portfolio() {
           <p className="mb-2 mt-8 text-center text-sm font-medium uppercase tracking-wider text-gray-200">
             Web Version Launching 8th March, 2026
           </p>
-          <div className="flex flex-wrap justify-center gap-4 sm:gap-8">
-            <div className="flex flex-col items-center">
-              <span className="font-heading text-3xl font-bold tabular-nums text-gray-200 sm:text-4xl">
-                {String(days).padStart(2, "0")}
-              </span>
-              <span className="mt-1 text-xs text-zinc-400">days</span>
-            </div>
-            <div className="flex flex-col items-center">
-              <span className="font-heading text-3xl font-bold tabular-nums text-gray-200 sm:text-4xl">
-                {String(hours).padStart(2, "0")}
-              </span>
-              <span className="mt-1 text-xs text-zinc-400">hours</span>
-            </div>
-            <div className="flex flex-col items-center">
-              <span className="font-heading text-3xl font-bold tabular-nums text-gray-200 sm:text-4xl">
-                {String(minutes).padStart(2, "0")}
-              </span>
-              <span className="mt-1 text-xs text-zinc-400">minutes</span>
-            </div>
-            <div className="flex flex-col items-center">
-              <span className="font-heading text-3xl font-bold tabular-nums text-gray-200 sm:text-4xl">
-                {String(seconds).padStart(2, "0")}
-              </span>
-              <span className="mt-1 text-xs text-zinc-400">seconds</span>
-            </div>
-          </div>
+          <CountdownTimer />
           <Image
             src="/imgs/thumbnail.webp"
             alt="A handmade perspective drawing"
@@ -114,6 +70,9 @@ export default function Portfolio() {
             className="mx-auto opacity-50 mt-8"
           />
           <div className="mt-10 w-full flex flex-col gap-4 sm:flex-row sm:gap-6 sm:justify-between">
+            <Suspense fallback={<div>Loading projects...</div>}>
+              <Projects projects={projects} />
+            </Suspense>
             <a
               href="/docs/antonio-ruiz-portfolio-architecture.pdf"
               target="_blank"
