@@ -2,107 +2,17 @@ import Image from "next/image";
 import Link from "next/link";
 import "../../../../projects.css";
 import { notFound } from "next/navigation";
-import type { Project } from "../../../../../types/project";
-
-const PROJECT_ORDER = ["00", "1", "2", "3", "4", "5", "6", "7"] as const;
+import { getStrapiMedia } from "../../../../utils/getStrapiMedia";
+const PROJECT_ORDER = ["00", "01", "02", "03", "04", "05", "06", "07"] as const;
 
 type ProjectPageProps = {
   params: Promise<{ id: string }>;
 };
 
-function getSectionLabel(code: string) {
-  if (code === "00") return "Table of contents";
-  if (["1", "2", "3"].includes(code)) return "Main projects";
-  if (["4", "5", "6"].includes(code)) return "Complementary projects";
-  if (code === "7") return "Back cover & contact";
-  return "Project";
+function normalizePcode(code: string): string {
+  const n = code.replace(/^0+/, "") || "0";
+  return n.length === 1 ? `0${n}` : n.padStart(2, "0");
 }
-
-function mapStrapiToProject(attrs: any): Project {
-  const interventionSrc = Array.isArray(attrs.intervention)
-    ? attrs.intervention[0]
-    : attrs.intervention;
-  const siteSrc = Array.isArray(attrs.site) ? attrs.site[0] : attrs.site;
-  const keyStagesSrc = Array.isArray(attrs.keyStages)
-    ? attrs.keyStages[0]
-    : attrs.keyStages;
-  const overviewSrc = Array.isArray(attrs.overview)
-    ? attrs.overview[0]
-    : attrs.overview;
-
-  const toArray = (value: any): string[] => {
-    if (!value) return [];
-    if (Array.isArray(value)) return value;
-    if (typeof value === "string") {
-      return value
-        .split(",")
-        .map((v) => v.trim())
-        .filter(Boolean);
-    }
-    return [];
-  };
-
-  const collaborators =
-    Array.isArray(interventionSrc?.collaborators?.data) ||
-    Array.isArray(interventionSrc?.collaborators)
-      ? (interventionSrc.collaborators.data ?? interventionSrc.collaborators)
-          .map((c: any) => c?.attributes?.name ?? c?.name)
-          .filter(Boolean)
-      : [];
-
-  return {
-    pcode: attrs.pcode,
-    name: attrs.name,
-    summary: attrs.summary,
-    description: attrs.description,
-    tags: toArray(attrs.tags),
-
-    intervention: {
-      yearStarted: interventionSrc?.yearStarted,
-      yearCompleted: interventionSrc?.yearCompleted,
-      area: interventionSrc?.area,
-      collaborators,
-      styles: toArray(interventionSrc?.styles),
-      materials: toArray(interventionSrc?.materials),
-      usesRegionalMaterials: Boolean(interventionSrc?.usesRegionalMaterials),
-      wasComputated: Boolean(interventionSrc?.wasComputated),
-      wasPrototyped: Boolean(interventionSrc?.wasPrototyped),
-      isRegenerative: Boolean(interventionSrc?.isRegenerative),
-      isSustainable: Boolean(interventionSrc?.isSustainable),
-      isAuthoredByAntonio: Boolean(interventionSrc?.isAuthoredByAntonio),
-    },
-
-    site: {
-      area: siteSrc?.area,
-      location: siteSrc?.location,
-      country: siteSrc?.country,
-      city: siteSrc?.city,
-      latitude: siteSrc?.latitude,
-      longitude: siteSrc?.longitude,
-    },
-
-    scale: attrs.scale,
-    status: attrs.projectStatus,
-    domain: attrs.domain,
-
-    keyStages: keyStagesSrc && {
-      initiation: keyStagesSrc.initiation,
-      planning: keyStagesSrc.planning,
-      execution: keyStagesSrc.execution,
-      completion: keyStagesSrc.completion,
-    },
-
-    overview: {
-      context: overviewSrc?.context ?? "",
-      challenges: overviewSrc?.challenges ?? "",
-      approach: overviewSrc?.approach ?? "",
-      results: overviewSrc?.results ?? "",
-      learnings: overviewSrc?.learnings ?? undefined,
-      nextSteps: overviewSrc?.nextSteps ?? undefined,
-    },
-  };
-}
-
 export default async function ProjectPage({ params }: ProjectPageProps) {
   const { id } = await params;
   const baseUrl = process.env.NEXT_PUBLIC_STRAPI_URL;
@@ -112,13 +22,8 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
   }
 
   const res = await fetch(
-    `${baseUrl}/api/projects?filters[pcode][$eq]=${encodeURIComponent(
-      id,
-    )}&populate=*`,
-    {
-      // Keep data reasonably fresh during development
-      next: { revalidate: 60 },
-    },
+    `${baseUrl}/api/projects?filters[pcode][$eq]=${encodeURIComponent(id)}&populate=*`,
+    { next: { revalidate: 60 } },
   );
 
   if (!res.ok) {
@@ -130,42 +35,82 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
 
   const { data } = await res.json();
   const projectNode = Array.isArray(data) ? data[0] : data;
+  const attrs =
+    projectNode?.attributes ?? (projectNode as Record<string, unknown>);
 
-  if (!projectNode) {
-    return (
-      <div
-        className="relative min-h-[100svh] font-sans text-[#2B4673]"
-        style={{ backgroundColor: "#EDE7E3" }}
-      >
-        <div className="portfolio-grain-light" aria-hidden />
-        <div className="portfolio-grid-light" aria-hidden />
-        <div className="relative z-10 mx-auto max-w-3xl px-6 py-16 text-center">
-          <p className="mb-6 text-sm uppercase tracking-widest opacity-70">
-            Project not found
-          </p>
-          <Link
-            href="/portfolio"
-            className="text-sm font-medium underline underline-offset-4 hover:opacity-70"
-          >
-            ← Back to portfolio
-          </Link>
-        </div>
-      </div>
-    );
+  if (!projectNode || !attrs) {
+    notFound();
   }
 
-  const attrs = projectNode.attributes ?? projectNode;
-  const project = mapStrapiToProject(attrs);
+  const proj = attrs as Record<string, unknown>;
 
-  const cover =
-    attrs.cover?.data?.attributes ?? attrs.image?.data?.attributes ?? null;
+  async function getMediaAssets(fileId: number) {
+    const res = await fetch(`${baseUrl}/api/upload/files/${fileId}`);
+    if (!res.ok) {
+      throw new Error("Failed to fetch media assets");
+    }
+    return res.json();
+  }
 
-  const index = PROJECT_ORDER.indexOf(id as (typeof PROJECT_ORDER)[number]);
+  const assets = (proj.assets ??
+    (projectNode as Record<string, unknown>).assets) as
+    | { id?: number; url?: string }[]
+    | undefined;
+  console.log("photos", proj.photos);
+  console.log("assets", assets);
+  const firstAsset = assets?.[0];
+  const coverUrl =
+    firstAsset?.url != null
+      ? getStrapiMedia(firstAsset.url)
+      : firstAsset?.id != null
+        ? await getMediaAssets(firstAsset.id)
+            .then((file) => (file?.url ? getStrapiMedia(file.url) : null))
+            .catch(() => null)
+        : null;
+
+  const normalizedId = normalizePcode(id);
+  const index = PROJECT_ORDER.indexOf(
+    normalizedId as (typeof PROJECT_ORDER)[number],
+  );
   const prevCode = index > 0 ? PROJECT_ORDER[index - 1] : null;
   const nextCode =
     index >= 0 && index < PROJECT_ORDER.length - 1
       ? PROJECT_ORDER[index + 1]
       : null;
+
+  function getSectionLabel(pcode: string): string {
+    return pcode ? `Project ${pcode}` : "Project";
+  }
+
+  const tagsRaw = proj.tags;
+  const tagsList: string[] = Array.isArray(tagsRaw)
+    ? tagsRaw
+    : typeof tagsRaw === "string"
+      ? tagsRaw
+          .split(",")
+          .map((s: string) => s.trim())
+          .filter(Boolean)
+      : [];
+
+  const interventionData = Array.isArray(proj.intervention)
+    ? (proj.intervention as Record<string, unknown>[])[0]
+    : undefined;
+  const collaboratorsData = interventionData?.collaborators as
+    | { data?: { attributes?: { name?: string }; name?: string }[] }
+    | undefined;
+  const collaboratorsList = (collaboratorsData?.data ?? [])
+    .map((c) => c?.attributes?.name ?? (c as { name?: string })?.name ?? "")
+    .filter(Boolean);
+
+  const site = (proj.site as Record<string, unknown>[] | undefined)?.[0] as
+    | Record<string, unknown>
+    | undefined;
+  const overview = (
+    proj.overview as Record<string, unknown>[] | undefined
+  )?.[0] as Record<string, unknown> | undefined;
+  const keyStages = (
+    proj.keyStages as Record<string, unknown>[] | undefined
+  )?.[0] as Record<string, unknown> | undefined;
 
   return (
     <div
@@ -176,7 +121,7 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
       <div className="portfolio-grid-light" aria-hidden />
 
       <div className="relative z-10 mx-auto max-w-3xl">
-        <article className="mt-8  bg-white/70 p-6 sm:p-8">
+        <article className="mt-8 p-6 sm:p-8">
           <span className="bracket top-0 left-0 absolute w-5 h-5 border-t-2 border-l-2 border-blue-800 opacity-100"></span>
           <span className="bracket top-0 right-0 absolute w-5 h-5 border-t-2 border-r-2 border-blue-800 opacity-100"></span>
           <span className="bracket bottom-0 left-0 absolute w-5 h-5 border-b-2 border-l-2 border-blue-800 opacity-100"></span>
@@ -184,15 +129,30 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
           {/* Masthead */}
           <header className="border-b border-zinc-300 pb-6">
             <p className="text-xs font-semibold uppercase tracking-[0.3em] opacity-70">
-              {project.domain.toUpperCase()} • {getSectionLabel(project.pcode)}
+              {normalizedId} • {String(proj.domain ?? "").toUpperCase()} •{" "}
+              {getSectionLabel(String(proj.pcode ?? id))}
             </p>
             <h1 className="mt-3 font-heading text-2xl font-bold tracking-tight sm:text-3xl">
-              {project.name}
+              {String(proj.name ?? "")}
             </h1>
-            {project.summary && (
+            {proj.summary != null && String(proj.summary) !== "" && (
               <p className="mt-4 max-w-2xl text-sm leading-relaxed italic text-[#2B4673] opacity-75 sm:text-base">
-                {project.summary}
+                {String(proj.summary)}
               </p>
+            )}
+            {tagsList.length > 0 && (
+              <div className="mt-2">
+                <div className="flex flex-wrap gap-2">
+                  {tagsList.map((tag: string) => (
+                    <span
+                      key={tag}
+                      className="inline-flex items-center rounded-full border border-[#2B4673]/30 bg-[#D0D5DB] px-4 h-6 py-2 text-xs font-semibold text-[#2B4673] transition-colors"
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              </div>
             )}
           </header>
 
@@ -204,14 +164,14 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
                   Location
                 </dt>
                 <dd>
-                  {project.site.city}, {project.site.country}
+                  {String(site?.city ?? "")}, {String(site?.country ?? "")}
                 </dd>
               </div>
               <div>
                 <dt className="text-[0.65rem] uppercase tracking-[0.25em] opacity-70">
                   Site
                 </dt>
-                <dd>{project.site.location}</dd>
+                <dd>{String(site?.location ?? "")}</dd>
               </div>
             </dl>
 
@@ -221,65 +181,83 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
                   Years
                 </dt>
                 <dd>
-                  {project.intervention.yearStarted}
-                  {project.intervention.yearCompleted
-                    ? ` – ${project.intervention.yearCompleted}`
+                  {String(interventionData?.yearStarted ?? "")}
+                  {interventionData?.yearCompleted != null
+                    ? ` – ${interventionData.yearCompleted}`
                     : " – Ongoing"}
                 </dd>
               </div>
-              {project.intervention.area && (
+              {interventionData?.area != null && (
                 <div>
                   <dt className="text-[0.65rem] uppercase tracking-[0.25em] opacity-70">
                     Area
                   </dt>
-                  <dd>{project.intervention.area.toLocaleString()} m²</dd>
+                  <dd>{Number(interventionData.area).toLocaleString()} m²</dd>
                 </div>
               )}
             </dl>
 
             <dl className="space-y-2">
-              {project.intervention.collaborators.length > 0 && (
+              {collaboratorsList.length > 0 && (
                 <div>
                   <dt className="text-[0.65rem] uppercase tracking-[0.25em] opacity-70">
                     Collaborators
                   </dt>
-                  <dd>{project.intervention.collaborators.join(", ")}</dd>
-                </div>
-              )}
-              {project.tags.length > 0 && (
-                <div>
-                  <dt className="text-[0.65rem] uppercase tracking-[0.25em] opacity-70">
-                    Keywords
-                  </dt>
-                  <dd className="mt-2">
-                    <div className="flex flex-wrap gap-2">
-                      {project.tags.map((tag) => (
-                        <span
-                          key={tag}
-                          className="inline-flex items-center rounded-md border border-[#2B4673]/30 bg-[#D0D5DB] px-2.5 py-0.5 text-xs font-semibold text-[#2B4673] transition-colors"
-                        >
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-                  </dd>
+                  <dd>{collaboratorsList.join(", ")}</dd>
                 </div>
               )}
             </dl>
+            <div>
+              <dt className="text-[0.65rem] uppercase tracking-[0.25em] opacity-70">
+                Scale
+              </dt>
+              <dd className="capitalize">{String(proj.scale ?? "")}</dd>
+            </div>
+            <div>
+              <dt className="text-[0.65rem] uppercase tracking-[0.25em] opacity-70">
+                Status
+              </dt>
+              <dd className="capitalize">{String(proj.projectStatus ?? "")}</dd>
+            </div>
+            <div>
+              <dt className="text-[0.65rem] uppercase tracking-[0.25em] opacity-70">
+                Regional materials
+              </dt>
+              <dd>{interventionData?.usesRegionalMaterials ? "Yes" : "No"}</dd>
+            </div>
+            <div>
+              <dt className="text-[0.65rem] uppercase tracking-[0.25em] opacity-70">
+                Computational tools
+              </dt>
+              <dd>{interventionData?.wasComputated ? "Used" : "Not used"}</dd>
+            </div>
+            <div>
+              <dt className="text-[0.65rem] uppercase tracking-[0.25em] opacity-70">
+                Prototype built
+              </dt>
+              <dd>{interventionData?.wasPrototyped ? "Yes" : "No"}</dd>
+            </div>
+            <div>
+              <dt className="text-[0.65rem] uppercase tracking-[0.25em] opacity-70">
+                Regenerative focus
+              </dt>
+              <dd>{interventionData?.isRegenerative ? "Yes" : "No"}</dd>
+            </div>
+            <div>
+              <dt className="text-[0.65rem] uppercase tracking-[0.25em] opacity-70">
+                Sustainable design
+              </dt>
+              <dd>{interventionData?.isSustainable ? "Yes" : "No"}</dd>
+            </div>
           </section>
-
           {/* Hero image */}
-          {cover?.url && (
+          {coverUrl && (
             <figure className="mt-8 overflow-hidden rounded-lg border border-zinc-300 bg-white/60">
               <Image
-                src={
-                  cover.url.startsWith("http")
-                    ? cover.url
-                    : `${baseUrl}${cover.url}`
-                }
-                alt={cover.alternativeText ?? project.name}
-                width={cover.width ?? 1200}
-                height={cover.height ?? 800}
+                src={coverUrl}
+                alt={String(proj.name ?? "")}
+                width={1200}
+                height={800}
                 className="h-auto w-full object-cover"
               />
             </figure>
@@ -287,79 +265,85 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
 
           {/* Narrative sections */}
           <section className="mt-10 space-y-8 text-sm leading-relaxed sm:text-base">
-            {project.overview.context && (
+            {overview?.context != null && String(overview.context) !== "" ? (
               <section>
                 <h2 className="font-heading text-xs font-semibold uppercase tracking-[0.3em] opacity-70">
                   Context
                 </h2>
                 <p className="mt-3 whitespace-pre-line">
-                  {project.overview.context}
+                  {String(overview.context)}
                 </p>
               </section>
-            )}
+            ) : null}
 
-            {project.overview.challenges && (
+            {overview?.challenges != null &&
+            String(overview.challenges) !== "" ? (
               <section>
                 <h2 className="font-heading text-xs font-semibold uppercase tracking-[0.3em] opacity-70">
                   Challenges
                 </h2>
                 <p className="mt-3 whitespace-pre-line">
-                  {project.overview.challenges}
+                  {String(overview.challenges)}
                 </p>
               </section>
-            )}
+            ) : null}
 
-            {project.overview.approach && (
+            {overview?.approach != null && String(overview.approach) !== "" ? (
               <section>
                 <h2 className="font-heading text-xs font-semibold uppercase tracking-[0.3em] opacity-70">
                   Approach
                 </h2>
                 <p className="mt-3 whitespace-pre-line">
-                  {project.overview.approach}
+                  {String(overview.approach)}
                 </p>
               </section>
-            )}
+            ) : null}
 
-            {project.overview.results && (
+            {overview?.results != null && String(overview.results) !== "" ? (
               <section>
                 <h2 className="font-heading text-xs font-semibold uppercase tracking-[0.3em] opacity-70">
                   Results
                 </h2>
                 <p className="mt-3 whitespace-pre-line">
-                  {project.overview.results}
+                  {String(overview.results)}
                 </p>
               </section>
-            )}
+            ) : null}
 
-            {(project.overview.learnings || project.overview.nextSteps) && (
+            {(overview?.learnings != null &&
+              String(overview.learnings) !== "") ||
+            (overview?.nextSteps != null &&
+              String(overview.nextSteps) !== "") ? (
               <section className="grid gap-8 sm:grid-cols-2">
-                {project.overview.learnings && (
+                {overview?.learnings != null &&
+                String(overview.learnings) !== "" ? (
                   <div>
                     <h2 className="font-heading text-xs font-semibold uppercase tracking-[0.3em] opacity-70">
                       Learnings
                     </h2>
                     <p className="mt-3 whitespace-pre-line">
-                      {project.overview.learnings}
+                      {String(overview.learnings)}
                     </p>
                   </div>
-                )}
-                {project.overview.nextSteps && (
+                ) : null}
+                {overview?.nextSteps != null &&
+                String(overview.nextSteps) !== "" ? (
                   <div>
                     <h2 className="font-heading text-xs font-semibold uppercase tracking-[0.3em] opacity-70">
                       Next steps
                     </h2>
                     <p className="mt-3 whitespace-pre-line">
-                      {project.overview.nextSteps}
+                      {String(overview.nextSteps)}
                     </p>
                   </div>
-                )}
+                ) : null}
               </section>
-            )}
+            ) : null}
           </section>
 
-          {/* Key stages & technical flags */}
+          {/* Key stages */}
           <section className="mt-10 grid gap-8 border-t border-zinc-300 pt-6 text-xs sm:grid-cols-2">
-            {project.keyStages && (
+            {keyStages && (
               <div>
                 <h2 className="font-heading text-[0.7rem] font-semibold uppercase tracking-[0.3em] opacity-70">
                   Project timeline
@@ -367,69 +351,23 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
                 <ol className="mt-4 space-y-2">
                   <li>
                     <span className="font-semibold">Initiation:</span>{" "}
-                    {project.keyStages.initiation}
+                    {String(keyStages.initiation ?? "")}
                   </li>
                   <li>
                     <span className="font-semibold">Planning:</span>{" "}
-                    {project.keyStages.planning}
+                    {String(keyStages.planning ?? "")}
                   </li>
                   <li>
                     <span className="font-semibold">Execution:</span>{" "}
-                    {project.keyStages.execution}
+                    {String(keyStages.execution ?? "")}
                   </li>
                   <li>
                     <span className="font-semibold">Completion:</span>{" "}
-                    {project.keyStages.completion}
+                    {String(keyStages.completion ?? "")}
                   </li>
                 </ol>
               </div>
             )}
-
-            <div>
-              <h2 className="font-heading text-[0.7rem] font-semibold uppercase tracking-[0.3em] opacity-70">
-                Technical profile
-              </h2>
-              <dl className="mt-4 space-y-1">
-                <div>
-                  <dt className="inline opacity-70">Scale:</dt>{" "}
-                  <dd className="inline capitalize">{project.scale}</dd>
-                </div>
-                <div>
-                  <dt className="inline opacity-70">Status:</dt>{" "}
-                  <dd className="inline capitalize">{project.status}</dd>
-                </div>
-                <div>
-                  <dt className="inline opacity-70">Regional materials:</dt>{" "}
-                  <dd className="inline">
-                    {project.intervention.usesRegionalMaterials ? "Yes" : "No"}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="inline opacity-70">Computational tools:</dt>{" "}
-                  <dd className="inline">
-                    {project.intervention.wasComputated ? "Used" : "Not used"}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="inline opacity-70">Prototype built:</dt>{" "}
-                  <dd className="inline">
-                    {project.intervention.wasPrototyped ? "Yes" : "No"}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="inline opacity-70">Regenerative focus:</dt>{" "}
-                  <dd className="inline">
-                    {project.intervention.isRegenerative ? "Yes" : "No"}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="inline opacity-70">Sustainable design:</dt>{" "}
-                  <dd className="inline">
-                    {project.intervention.isSustainable ? "Yes" : "No"}
-                  </dd>
-                </div>
-              </dl>
-            </div>
           </section>
 
           {(prevCode || nextCode) && (

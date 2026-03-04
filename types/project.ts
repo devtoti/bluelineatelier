@@ -44,6 +44,14 @@ export type SiteData = {
     latitude: number;
     longitude: number;
 };
+export type ProjectAssets = {
+  cover?: {
+    url: string;
+    alternativeText?: string | null;
+    width?: number;
+    height?: number;
+  };
+};
 export type Project = {
   pcode: string;
   name: string;
@@ -65,4 +73,5 @@ export type Project = {
     completion: string;
   };
   overview: Overview;
+  assets?: ProjectAssets;
 };

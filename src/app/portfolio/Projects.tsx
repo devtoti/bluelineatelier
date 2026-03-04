@@ -1,7 +1,11 @@
-// Path: ./src/app/ui/articles.tsx
-
 import { use } from "react";
 import Link from "next/link";
+
+function toTwoDigitPcode(value: string | number | undefined): string {
+  if (value == null) return "00";
+  const s = String(value).replace(/^0+/, "") || "0";
+  return s.length === 1 ? `0${s}` : s.padStart(2, "0");
+}
 
 export default function Projects({ projects }: { projects: Promise<any> }) {
   const allProjects = use(projects);
@@ -17,11 +21,12 @@ export default function Projects({ projects }: { projects: Promise<any> }) {
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {items.slice(0, 6).map((project: any) => {
           const attrs = project.attributes ?? project;
+          const pcode = toTwoDigitPcode(attrs.pcode ?? attrs.code ?? project.id);
 
           return (
             <Link
-              key={attrs.pcode ?? attrs.code ?? project.id}
-              href={`/portfolio/projects/${attrs.pcode ?? attrs.code ?? project.id}`}
+              key={pcode}
+              href={`/portfolio/projects/${pcode}`}
               className="group block rounded-lg border border-zinc-800 bg-black/40 p-4 text-left transition-colors hover:border-zinc-500"
             >
               <h3 className="font-heading mb-1 text-base font-semibold text-white group-hover:text-blue-300">
