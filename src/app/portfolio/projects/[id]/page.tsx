@@ -1,14 +1,32 @@
-import Image from "next/image";
 import Link from "next/link";
+import type { ReactNode } from "react";
 import "../../../../projects.css";
 import { notFound } from "next/navigation";
 import { getStrapiMedia } from "../../../../utils/getStrapiMedia";
+import { ImageCarousel } from "../../../../components/ImageCarousel";
+import { ImageWithCaption } from "@/components/ImageWithCaption";
 const PROJECT_ORDER = ["00", "01", "02", "03", "04", "05", "06", "07"] as const;
 
 type ProjectPageProps = {
   params: Promise<{ id: string }>;
 };
 
+const CaptionText = ({
+  title,
+  text,
+}: {
+  title: string | undefined;
+  text: string | undefined;
+}) => {
+  return (
+    <div className="mt-3 whitespace-pre-line text-blue-700 max-w-[40ch]">
+      <p className="pb-2 text-base font-bold uppercase tracking-[0.15em]">
+        {title}
+      </p>
+      <p className="text-base font-normal">{text}</p>
+    </div>
+  );
+};
 function normalizePcode(code: string): string {
   const n = code.replace(/^0+/, "") || "0";
   return n.length === 1 ? `0${n}` : n.padStart(2, "0");
@@ -44,29 +62,34 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
 
   const proj = attrs as Record<string, unknown>;
 
-  async function getMediaAssets(fileId: number) {
-    const res = await fetch(`${baseUrl}/api/upload/files/${fileId}`);
-    if (!res.ok) {
-      throw new Error("Failed to fetch media assets");
-    }
-    return res.json();
-  }
-
-  const assets = (proj.assets ??
-    (projectNode as Record<string, unknown>).assets) as
-    | { id?: number; url?: string }[]
-    | undefined;
-  console.log("photos", proj.photos);
-  console.log("assets", assets);
-  const firstAsset = assets?.[0];
-  const coverUrl =
-    firstAsset?.url != null
-      ? getStrapiMedia(firstAsset.url)
-      : firstAsset?.id != null
-        ? await getMediaAssets(firstAsset.id)
-            .then((file) => (file?.url ? getStrapiMedia(file.url) : null))
-            .catch(() => null)
-        : null;
+  type PhotoItem = {
+    name?: string;
+    url?: string;
+    alt?: string;
+    alternativeText?: string;
+    description?: string;
+    caption?: string;
+  };
+  const photos = proj.photos as PhotoItem[] | undefined;
+  const projectName = String(proj.name ?? "Project image");
+  const carouselItems = (photos ?? [])
+    .filter(
+      (p): p is PhotoItem & { url: string } =>
+        typeof p?.url === "string" && p.url.length > 0,
+    )
+    .map((p) => {
+      const alt = [p.alt, p.alternativeText, p.name, proj.name].find(
+        (v) => typeof v === "string" && v.length > 0,
+      ) as string | undefined;
+      const description = [p.description, p.caption].find(
+        (v) => typeof v === "string" && v.length > 0,
+      ) as string | undefined;
+      return {
+        url: getStrapiMedia(p.url),
+        alt: alt ?? projectName,
+        description: description ?? alt ?? projectName,
+      };
+    });
 
   const normalizedId = normalizePcode(id);
   const index = PROJECT_ORDER.indexOf(
@@ -111,7 +134,6 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
   const keyStages = (
     proj.keyStages as Record<string, unknown>[] | undefined
   )?.[0] as Record<string, unknown> | undefined;
-
   return (
     <div
       className="project relative min-h-[100svh] font-sans text-[#2B4673]"
@@ -158,186 +180,228 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
 
           {/* Meta grid */}
           <section className="overview mt-6 grid gap-6 text-xs sm:grid-cols-3">
-            <dl className="space-y-2">
-              <div>
-                <dt className="text-[0.65rem] uppercase tracking-[0.25em] opacity-70">
-                  Location
-                </dt>
-                <dd>
-                  {String(site?.city ?? "")}, {String(site?.country ?? "")}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-[0.65rem] uppercase tracking-[0.25em] opacity-70">
-                  Site
-                </dt>
-                <dd>{String(site?.location ?? "")}</dd>
-              </div>
-            </dl>
+            {
+              (
+                <>
+                  <dl className="space-y-2">
+                    <dt className="text-[0.65rem] uppercase tracking-[0.25em] opacity-70">
+                      Location
+                    </dt>
+                    <dd>
+                      {[
+                        String(site?.city ?? ""),
+                        String(site?.country ?? ""),
+                      ].join(", ")}
+                    </dd>
+                    <dt className="text-[0.65rem] uppercase tracking-[0.25em] opacity-70">
+                      Site
+                    </dt>
+                    <dd>{String(site?.location ?? "")}</dd>
+                  </dl>
 
-            <dl className="space-y-2">
-              <div>
-                <dt className="text-[0.65rem] uppercase tracking-[0.25em] opacity-70">
-                  Years
-                </dt>
-                <dd>
-                  {String(interventionData?.yearStarted ?? "")}
-                  {interventionData?.yearCompleted != null
-                    ? ` – ${interventionData.yearCompleted}`
-                    : " – Ongoing"}
-                </dd>
-              </div>
-              {interventionData?.area != null && (
-                <div>
-                  <dt className="text-[0.65rem] uppercase tracking-[0.25em] opacity-70">
-                    Area
-                  </dt>
-                  <dd>{Number(interventionData.area).toLocaleString()} m²</dd>
-                </div>
-              )}
-            </dl>
+                  <dl className="space-y-2">
+                    <dt className="text-[0.65rem] uppercase tracking-[0.25em] opacity-70">
+                      Years
+                    </dt>
+                    <dd>
+                      {String(interventionData?.yearStarted ?? "")}
+                      {interventionData?.yearCompleted != null
+                        ? ` – ${String(interventionData.yearCompleted)}`
+                        : " – Ongoing"}
+                    </dd>
+                    {
+                      (interventionData?.area != null ? (
+                        <>
+                          <dt className="text-[0.65rem] uppercase tracking-[0.25em] opacity-70">
+                            Area
+                          </dt>
+                          <dd>
+                            {Number(interventionData.area).toLocaleString()} m²
+                          </dd>
+                        </>
+                      ) : null) as ReactNode
+                    }
+                  </dl>
 
-            <dl className="space-y-2">
-              {collaboratorsList.length > 0 && (
-                <div>
-                  <dt className="text-[0.65rem] uppercase tracking-[0.25em] opacity-70">
-                    Collaborators
-                  </dt>
-                  <dd>{collaboratorsList.join(", ")}</dd>
-                </div>
-              )}
-            </dl>
-            <div>
-              <dt className="text-[0.65rem] uppercase tracking-[0.25em] opacity-70">
-                Scale
-              </dt>
-              <dd className="capitalize">{String(proj.scale ?? "")}</dd>
-            </div>
-            <div>
-              <dt className="text-[0.65rem] uppercase tracking-[0.25em] opacity-70">
-                Status
-              </dt>
-              <dd className="capitalize">{String(proj.projectStatus ?? "")}</dd>
-            </div>
-            <div>
-              <dt className="text-[0.65rem] uppercase tracking-[0.25em] opacity-70">
-                Regional materials
-              </dt>
-              <dd>{interventionData?.usesRegionalMaterials ? "Yes" : "No"}</dd>
-            </div>
-            <div>
-              <dt className="text-[0.65rem] uppercase tracking-[0.25em] opacity-70">
-                Computational tools
-              </dt>
-              <dd>{interventionData?.wasComputated ? "Used" : "Not used"}</dd>
-            </div>
-            <div>
-              <dt className="text-[0.65rem] uppercase tracking-[0.25em] opacity-70">
-                Prototype built
-              </dt>
-              <dd>{interventionData?.wasPrototyped ? "Yes" : "No"}</dd>
-            </div>
-            <div>
-              <dt className="text-[0.65rem] uppercase tracking-[0.25em] opacity-70">
-                Regenerative focus
-              </dt>
-              <dd>{interventionData?.isRegenerative ? "Yes" : "No"}</dd>
-            </div>
-            <div>
-              <dt className="text-[0.65rem] uppercase tracking-[0.25em] opacity-70">
-                Sustainable design
-              </dt>
-              <dd>{interventionData?.isSustainable ? "Yes" : "No"}</dd>
-            </div>
+                  <dl className="space-y-2">
+                    {
+                      (collaboratorsList.length > 0 ? (
+                        <>
+                          <dt className="text-[0.65rem] uppercase tracking-[0.25em] opacity-70">
+                            Collaborators
+                          </dt>
+                          <dd>{collaboratorsList.join(", ")}</dd>
+                        </>
+                      ) : null) as ReactNode
+                    }
+                  </dl>
+                </>
+              ) as ReactNode
+            }
           </section>
-          {/* Hero image */}
-          {coverUrl && (
-            <figure className="mt-8 overflow-hidden rounded-lg border border-zinc-300 bg-white/60">
-              <Image
-                src={coverUrl}
-                alt={String(proj.name ?? "")}
-                width={1200}
-                height={800}
-                className="h-auto w-full object-cover"
-              />
-            </figure>
+          {/* Hero image carousel */}
+          {carouselItems.length > 0 && (
+            <ImageCarousel
+              items={carouselItems}
+              width={1200}
+              height={800}
+              className="mt-8"
+            />
+          )}
+          {/* Project description section */}
+          {proj.description && String(proj.description).trim() !== "" && (
+            <section className="mt-10">
+              <p className="text-base text-blue-900 whitespace-pre-line">
+                {String(proj.description)}
+              </p>
+            </section>
           )}
 
           {/* Narrative sections */}
           <section className="mt-10 space-y-8 text-sm leading-relaxed sm:text-base">
             {overview?.context != null && String(overview.context) !== "" ? (
-              <section>
-                <h2 className="font-heading text-xs font-semibold uppercase tracking-[0.3em] opacity-70">
-                  Context
-                </h2>
-                <p className="mt-3 whitespace-pre-line">
-                  {String(overview.context)}
-                </p>
-              </section>
+              <CaptionText title="Context" text={String(overview.context)} />
             ) : null}
 
             {overview?.challenges != null &&
             String(overview.challenges) !== "" ? (
-              <section>
-                <h2 className="font-heading text-xs font-semibold uppercase tracking-[0.3em] opacity-70">
-                  Challenges
-                </h2>
-                <p className="mt-3 whitespace-pre-line">
-                  {String(overview.challenges)}
-                </p>
-              </section>
+              <CaptionText
+                title="Challenges"
+                text={String(overview.challenges)}
+              />
             ) : null}
-
+            {/* Sketches image carousel with captions */}
             {overview?.approach != null && String(overview.approach) !== "" ? (
-              <section>
-                <h2 className="font-heading text-xs font-semibold uppercase tracking-[0.3em] opacity-70">
-                  Approach
-                </h2>
-                <p className="mt-3 whitespace-pre-line">
-                  {String(overview.approach)}
-                </p>
-              </section>
+              <CaptionText title="Approach" text={String(overview.approach)} />
             ) : null}
+            {(photos ?? []).filter(
+              (p) =>
+                p.url?.length &&
+                p.url.length > 0 &&
+                p.name?.toLowerCase()?.includes("sketches"),
+            ).length > 0 && (
+              <section className="mt-10">
+                <div className="grid gap-4 grid-cols-1 xs:grid-cols-2 md:grid-cols-3 mt-2">
+                  {(photos ?? [])
+                    .filter(
+                      (p) =>
+                        p.url?.length &&
+                        p.url.length > 0 &&
+                        p.name?.toLowerCase()?.includes("sketches"),
+                    )
+                    .map((sketch, idx) => (
+                      <ImageWithCaption
+                        key={sketch.url ?? idx}
+                        src={getStrapiMedia(sketch.url)}
+                        alt={String(
+                          sketch.alt ??
+                            sketch.alternativeText ??
+                            sketch.name ??
+                            `Sketch ${idx + 1}`,
+                        )}
+                        description={sketch.caption ?? sketch.description ?? ""}
+                        width={1000}
+                        height={700}
+                      />
+                    ))}
+                </div>
+              </section>
+            )}
+            {(photos ?? []).filter((p) => {
+              if (!p.url?.length || p.url.length === 0 || !p.name) return false;
+              const name = p.name.toLowerCase();
+              return (
+                name.includes("master") ||
+                name.includes("floor-plan") ||
+                name.includes("unit") ||
+                name.includes("elevation") ||
+                name.includes("section-cut") ||
+                name.includes("facade-cut") ||
+                name.includes("construction-detail")
+              );
+            }).length > 0 && (
+              <section className="mt-10">
+                <div className="grid gap-4 grid-cols-1 xs:grid-cols-2 md:grid-cols-3 mt-2">
+                  {(() => {
+                    // Corrected order: floor-plan before unit, and eliminate duplicates by assigning photos only to their first matching group
+                    const order = [
+                      "master",
+                      "floor-plan",
+                      "unit",
+                      "elevation",
+                      "section-cut",
+                      "facade-cut",
+                      "construction-detail",
+                    ];
+                    const groupedPhotos: { [key: string]: typeof photos } = {};
+                    order.forEach((label) => (groupedPhotos[label] = []));
+                    (photos ?? []).forEach((p) => {
+                      if (!p?.url || p.url.length === 0 || !p.name) return;
+                      const name = p.name.toLowerCase();
+                      for (const label of order) {
+                        if (name.includes(label)) {
+                          // Avoid lint error for possibly undefined:
+                          (groupedPhotos[label] ?? []).push(p);
+                          break; // assign only to the first matching group
+                        }
+                      }
+                    });
+                    // Flatten in order, guard for possibly undefined with || []
+                    const sortedPhotos: typeof photos = [];
+                    order.forEach((label) => {
+                      (groupedPhotos[label] || []).forEach((photo) => {
+                        sortedPhotos.push(photo);
+                      });
+                    });
+                    return sortedPhotos.map((filteredPhoto, idx) => (
+                      <ImageWithCaption
+                        key={filteredPhoto.url ?? idx}
+                        src={getStrapiMedia(filteredPhoto.url)}
+                        alt={String(
+                          filteredPhoto.alt ??
+                            filteredPhoto.alternativeText ??
+                            filteredPhoto.name ??
+                            `Drawing ${idx + 1}`,
+                        )}
+                        description={
+                          filteredPhoto.caption ??
+                          filteredPhoto.description ??
+                          ""
+                        }
+                        width={1200}
+                        height={900}
+                        figureClassName="border-blue-600"
+                      />
+                    ));
+                  })()}
+                </div>
+              </section>
+            )}
 
             {overview?.results != null && String(overview.results) !== "" ? (
-              <section>
-                <h2 className="font-heading text-xs font-semibold uppercase tracking-[0.3em] opacity-70">
-                  Results
-                </h2>
-                <p className="mt-3 whitespace-pre-line">
-                  {String(overview.results)}
-                </p>
-              </section>
+              <CaptionText title="Results" text={String(overview.results)} />
             ) : null}
 
             {(overview?.learnings != null &&
               String(overview.learnings) !== "") ||
             (overview?.nextSteps != null &&
               String(overview.nextSteps) !== "") ? (
-              <section className="grid gap-8 sm:grid-cols-2">
+              <div className="grid gap-8 sm:grid-cols-2">
                 {overview?.learnings != null &&
                 String(overview.learnings) !== "" ? (
-                  <div>
-                    <h2 className="font-heading text-xs font-semibold uppercase tracking-[0.3em] opacity-70">
-                      Learnings
-                    </h2>
-                    <p className="mt-3 whitespace-pre-line">
-                      {String(overview.learnings)}
-                    </p>
-                  </div>
+                  <CaptionText
+                    title="Learnings"
+                    text={String(overview.learnings)}
+                  />
                 ) : null}
                 {overview?.nextSteps != null &&
                 String(overview.nextSteps) !== "" ? (
-                  <div>
-                    <h2 className="font-heading text-xs font-semibold uppercase tracking-[0.3em] opacity-70">
-                      Next steps
-                    </h2>
-                    <p className="mt-3 whitespace-pre-line">
-                      {String(overview.nextSteps)}
-                    </p>
-                  </div>
+                  <CaptionText
+                    title="Next steps"
+                    text={String(overview.nextSteps)}
+                  />
                 ) : null}
-              </section>
+              </div>
             ) : null}
           </section>
 
