@@ -65,7 +65,7 @@ export function RenderPhotos({
   return (
     <article className="mt-10">
       {title != null && title !== "" && (
-        <h3 className="text-base font-bold uppercase tracking-[0.15em] text-blue-700 mb-2">
+        <h3 className="text-base font-bold uppercase tracking-[0.15em] text-[#2B4673] mb-2">
           {title}
         </h3>
       )}
@@ -83,7 +83,7 @@ export function RenderPhotos({
             description={photo.caption ?? photo.description ?? ""}
             width={width}
             height={height}
-            figureClassName="border-blue-600"
+            figureClassName="border-[#2B4673]"
           />
         ))}
       </div>

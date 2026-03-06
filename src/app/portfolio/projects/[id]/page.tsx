@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import "../../../../projects.css";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { getStrapiMedia } from "../../../../utils/getStrapiMedia";
 import { RenderPhotos } from "@/components/RenderPhotos";
 import { ImageCarousel } from "../../../../components/ImageCarousel";
@@ -20,7 +20,7 @@ const CaptionText = ({
   text: string | undefined;
 }) => {
   return (
-    <div className="mt-3 whitespace-pre-line text-blue-700 max-w-[40ch]">
+    <div className="mt-3 whitespace-pre-line text-[#2B4673] max-w-[40ch]">
       <p className="pb-2 text-base font-bold uppercase tracking-[0.15em]">
         {title}
       </p>
@@ -61,14 +61,22 @@ function normalizePcode(code: string): string {
 }
 export default async function ProjectPage({ params }: ProjectPageProps) {
   const { id } = await params;
+  const normalizedId = normalizePcode(id);
   const baseUrl = process.env.NEXT_PUBLIC_STRAPI_URL;
 
   if (!baseUrl) {
     throw new Error("NEXT_PUBLIC_STRAPI_URL is not defined");
   }
 
+  const altPcode = normalizedId.replace(/^0+/, "") || "0";
+  const pcodeVariants = [normalizedId, altPcode].filter(
+    (v, i, a) => a.indexOf(v) === i,
+  );
+  const filterQuery = pcodeVariants
+    .map((v, i) => `filters[pcode][$in][${i}]=${encodeURIComponent(v)}`)
+    .join("&");
   const res = await fetch(
-    `${baseUrl}/api/projects?filters[pcode][$eq]=${encodeURIComponent(id)}&populate=*`,
+    `${baseUrl}/api/projects?${filterQuery}&populate=*`,
     { next: { revalidate: 60 } },
   );
 
@@ -86,6 +94,10 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
 
   if (!projectNode || !attrs) {
     notFound();
+  }
+
+  if (id !== normalizedId) {
+    redirect(`/portfolio/projects/${normalizedId}`);
   }
 
   const proj = attrs as Record<string, unknown>;
@@ -141,7 +153,6 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
       };
     });
 
-  const normalizedId = normalizePcode(id);
   const index = PROJECT_ORDER.indexOf(
     normalizedId as (typeof PROJECT_ORDER)[number],
   );
@@ -357,7 +368,7 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
                           height={500}
                           className="w-full h-auto"
                         />
-                        <p className="text-xs text-blue-700">
+                        <p className="text-xs text-[#2B4673]">
                           {sketch.caption ?? ""}
                         </p>
                       </div>
