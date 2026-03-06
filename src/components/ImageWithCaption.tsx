@@ -37,7 +37,7 @@ export function ImageWithCaption({
       <Image
         {...imageProps}
         alt={alt}
-        className={`h-auto w-full object-cover mix-blend-multiply ${className ?? ""}`}
+        className={`h-auto w-full object-fit mix-blend-multiply ${className ?? ""}`}
       />
       <figcaption
         id={captionId}

@@ -15,7 +15,10 @@ export type CarouselItem = {
 };
 
 const MAX_THUMBS = 5;
-const THUMB_SIZE = 100;
+const TOTAL_SLOTS = 6; // 5 thumbs + 1 "more" slot; always show 6 so layout doesn't shift
+const SLOT_SIZE = 100;
+const SLOT_GAP = 8;
+const STRIP_WIDTH = TOTAL_SLOTS * SLOT_SIZE + (TOTAL_SLOTS - 1) * SLOT_GAP;
 const ASPECT_VIDEO = 16 / 9;
 
 export type ImageCarouselProps = {
@@ -99,21 +102,15 @@ export function ImageCarousel({
     [count, goPrev, goNext, goTo],
   );
 
-  // Max 6 slots: 5 real thumbs + 1 blurred "N+" when there are more after the window; sliding window
   const windowSize = 5;
   const windowStart =
     count > windowSize
       ? Math.max(0, Math.min(selectedIndex - 2, count - windowSize))
       : 0;
-  const visibleIndices =
-    count > windowSize
-      ? Array.from({ length: windowSize }, (_, j) => windowStart + j)
-      : Array.from({ length: Math.min(count, MAX_THUMBS) }, (_, j) => j);
+  const hasManyImages = count > MAX_THUMBS;
   const remainingAfterWindow = count - (windowStart + windowSize);
-  const showMoreSlot = remainingAfterWindow > 0;
   const moreCount = remainingAfterWindow;
 
-  // Move focus to the selected thumb when selection changes (e.g. arrow keys)
   useEffect(() => {
     if (count <= 1 || selectedIndex < 0 || selectedIndex >= count) return;
     const list = thumbListRef.current;
@@ -162,7 +159,7 @@ export function ImageCarousel({
         )}
       </div>
 
-      {/* Thumbnail strip: max 6 slots, chevrons, last slot blurred "+N" when more */}
+      {/* Thumbnail strip */}
       {count > 1 && (
         <div
           className={`mt-3 flex justify-between items-center gap-2 ${thumbsClassName}`}
@@ -192,70 +189,124 @@ export function ImageCarousel({
 
           <div
             ref={thumbListRef}
-            className="flex gap-2 justify-between w-full overflow-x-auto scroll-smooth py-1 [scrollbar-width:thin]"
-            style={{ width: "100%", maxWidth: "100%" }}
+            className="flex shrink-0 gap-2 overflow-hidden py-1"
+            style={{
+              width: STRIP_WIDTH,
+              minWidth: STRIP_WIDTH,
+              maxWidth: STRIP_WIDTH,
+            }}
             role="tablist"
             aria-label="Image thumbnails"
             aria-describedby={
               selectedItem?.description ? `${regionId}-caption` : undefined
             }
           >
-            {visibleIndices.map((i) => {
-              const item = items[i];
-              if (!item) return null;
-              const isSelected = i === selectedIndex;
-              const thumbSrc = item.thumbUrl ?? item.url;
-              return (
-                <button
-                  key={`${i}-${item.url}`}
-                  type="button"
-                  id={thumbId(i)}
-                  data-carousel-index={i}
-                  role="tab"
-                  aria-selected={isSelected}
-                  aria-label={`View image ${i + 1} of ${count}: ${item.alt}`}
-                  tabIndex={isSelected ? 0 : -1}
-                  onClick={() => goTo(i)}
-                  className="relative h-[100px] w-[100px] shrink-0 overflow-hidden rounded border-2 bg-zinc-100 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2 motion-reduce:transition-none"
-                  style={{
-                    borderColor: isSelected ? "#2B4673" : "transparent",
-                  }}
-                >
-                  <Image
-                    src={thumbSrc}
-                    alt=""
-                    width={100}
-                    height={100}
-                    className="h-full w-full object-cover"
-                    sizes="100px"
+            {Array.from({ length: TOTAL_SLOTS }, (_, slotIndex) => {
+              const slotStyle = {
+                width: SLOT_SIZE,
+                height: SLOT_SIZE,
+                minWidth: SLOT_SIZE,
+                minHeight: SLOT_SIZE,
+              };
+              if (hasManyImages) {
+                if (slotIndex < MAX_THUMBS) {
+                  const i = windowStart + slotIndex;
+                  const item = items[i];
+                  if (!item) return <div key={slotIndex} style={{ ...slotStyle, flexShrink: 0 }} aria-hidden />;
+                  const isSelected = i === selectedIndex;
+                  const thumbSrc = item.thumbUrl ?? item.url;
+                  return (
+                    <button
+                      key={`${i}-${item.url}`}
+                      type="button"
+                      id={thumbId(i)}
+                      data-carousel-index={i}
+                      role="tab"
+                      aria-selected={isSelected}
+                      aria-label={`View image ${i + 1} of ${count}: ${item.alt}`}
+                      tabIndex={isSelected ? 0 : -1}
+                      onClick={() => goTo(i)}
+                      className="relative shrink-0 overflow-hidden rounded border-2 bg-zinc-100 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2 motion-reduce:transition-none"
+                      style={{
+                        ...slotStyle,
+                        borderColor: isSelected ? "#2B4673" : "transparent",
+                      }}
+                    >
+                      <Image
+                        src={thumbSrc}
+                        alt=""
+                        width={SLOT_SIZE}
+                        height={SLOT_SIZE}
+                        className="h-full w-full object-cover"
+                        sizes={`${SLOT_SIZE}px`}
+                        aria-hidden
+                      />
+                    </button>
+                  );
+                }
+                return (
+                  <div
+                    key="more"
+                    className="relative flex shrink-0 items-center justify-center overflow-hidden rounded border-2 border-transparent bg-zinc-400"
+                    style={slotStyle}
                     aria-hidden
-                  />
-                </button>
-              );
+                  >
+                    {items[windowStart + MAX_THUMBS] && (
+                      <Image
+                        src={
+                          items[windowStart + MAX_THUMBS].thumbUrl ??
+                          items[windowStart + MAX_THUMBS].url
+                        }
+                        alt=""
+                        width={SLOT_SIZE}
+                        height={SLOT_SIZE}
+                        className="h-full w-full object-cover blur-md scale-110"
+                        sizes={`${SLOT_SIZE}px`}
+                      />
+                    )}
+                    <span className="absolute inset-0 flex items-center justify-center bg-black/40 text-lg font-semibold text-white">
+                      {moreCount}+
+                    </span>
+                  </div>
+                );
+              }
+              if (slotIndex < count) {
+                const i = slotIndex;
+                const item = items[i];
+                if (!item) return <div key={slotIndex} style={{ ...slotStyle, flexShrink: 0 }} aria-hidden />;
+                const isSelected = i === selectedIndex;
+                const thumbSrc = item.thumbUrl ?? item.url;
+                return (
+                  <button
+                    key={`${i}-${item.url}`}
+                    type="button"
+                    id={thumbId(i)}
+                    data-carousel-index={i}
+                    role="tab"
+                    aria-selected={isSelected}
+                    aria-label={`View image ${i + 1} of ${count}: ${item.alt}`}
+                    tabIndex={isSelected ? 0 : -1}
+                    onClick={() => goTo(i)}
+                    className="relative shrink-0 overflow-hidden rounded border-2 bg-zinc-100 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2 motion-reduce:transition-none"
+                    style={{
+                      ...slotStyle,
+                      borderColor: isSelected ? "#2B4673" : "transparent",
+                    }}
+                  >
+                    <Image
+                      src={thumbSrc}
+                      alt=""
+                      width={SLOT_SIZE}
+                      height={SLOT_SIZE}
+                      className="h-full w-full object-cover"
+                      sizes={`${SLOT_SIZE}px`}
+                      aria-hidden
+                    />
+                  </button>
+                );
+              }
+              return <div key={`empty-${slotIndex}`} style={{ ...slotStyle, flexShrink: 0 }} aria-hidden />;
             })}
-            {showMoreSlot && (
-              <div
-                className="relative flex h-[100px] w-[100px] shrink-0 items-center justify-center overflow-hidden rounded border-2 border-transparent bg-zinc-400"
-                aria-hidden
-              >
-                {items[windowStart + windowSize] && (
-                  <Image
-                    src={
-                      items[windowStart + windowSize].thumbUrl ??
-                      items[windowStart + windowSize].url
-                    }
-                    alt=""
-                    width={100}
-                    height={100}
-                    className="h-full w-full object-cover blur-md scale-110"
-                    sizes="100px"
-                  />
-                )}
-                <span className="absolute inset-0 flex items-center justify-center bg-black/40 text-lg font-semibold text-white">
-                  {moreCount}+
-                </span>
-              </div>
-            )}
           </div>
 
           <button
@@ -284,6 +335,17 @@ export function ImageCarousel({
             </svg>
           </button>
         </div>
+      )}
+
+      {/* Photo count: current / total, updates as user navigates */}
+      {count > 1 && (
+        <p
+          className="mt-2 text-center text-xs text-zinc-500 tabular-nums"
+          aria-live="polite"
+          aria-atomic="true"
+        >
+          {selectedIndex + 1} / {count}
+        </p>
       )}
 
       {/* Live region: announce slide change for screen readers */}

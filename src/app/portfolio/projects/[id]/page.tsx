@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import "../../../../projects.css";
 import { notFound } from "next/navigation";
 import { getStrapiMedia } from "../../../../utils/getStrapiMedia";
+import { RenderPhotos } from "@/components/RenderPhotos";
 import { ImageCarousel } from "../../../../components/ImageCarousel";
 import { ImageWithCaption } from "@/components/ImageWithCaption";
 const PROJECT_ORDER = ["00", "01", "02", "03", "04", "05", "06", "07"] as const;
@@ -27,6 +28,33 @@ const CaptionText = ({
     </div>
   );
 };
+
+function hasContent(value: unknown): boolean {
+  return value != null && String(value).trim() !== "";
+}
+
+function When({
+  ok,
+  children,
+}: {
+  ok: boolean;
+  children: ReactNode;
+}): ReactNode {
+  if (!ok) return null;
+  return <>{children}</>;
+}
+
+function ShowWhenText({
+  value,
+  children,
+}: {
+  value: unknown;
+  children: (text: string) => ReactNode;
+}): ReactNode {
+  if (!hasContent(value)) return null;
+  return <>{children(String(value).trim())}</>;
+}
+
 function normalizePcode(code: string): string {
   const n = code.replace(/^0+/, "") || "0";
   return n.length === 1 ? `0${n}` : n.padStart(2, "0");
@@ -72,11 +100,33 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
   };
   const photos = proj.photos as PhotoItem[] | undefined;
   const projectName = String(proj.name ?? "Project image");
+
+  const CAROUSEL_PRIORITY: [string, number][] = [
+    ["cover", 0],
+    ["render", 1],
+    ["master", 2],
+    ["floor-plan", 3],
+    ["section-cut", 4],
+    ["facade-cut", 5],
+    ["construction-detail", 6],
+  ];
+  function carouselPriority(name: string | undefined): number {
+    if (typeof name !== "string") return 99;
+    const lower = name.toLowerCase();
+    if (lower.includes("thumbnail") || /sketch/i.test(lower)) return -1;
+    for (const [key, order] of CAROUSEL_PRIORITY) {
+      if (lower.includes(key)) return order;
+    }
+    return 99;
+  }
+
   const carouselItems = (photos ?? [])
     .filter(
       (p): p is PhotoItem & { url: string } =>
         typeof p?.url === "string" && p.url.length > 0,
     )
+    .filter((p) => carouselPriority(p.name) >= 0)
+    .sort((a, b) => carouselPriority(a.name) - carouselPriority(b.name))
     .map((p) => {
       const alt = [p.alt, p.alternativeText, p.name, proj.name].find(
         (v) => typeof v === "string" && v.length > 0,
@@ -104,7 +154,6 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
   function getSectionLabel(pcode: string): string {
     return pcode ? `Project ${pcode}` : "Project";
   }
-
   const tagsRaw = proj.tags;
   const tagsList: string[] = Array.isArray(tagsRaw)
     ? tagsRaw
@@ -114,7 +163,6 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
           .map((s: string) => s.trim())
           .filter(Boolean)
       : [];
-
   const interventionData = Array.isArray(proj.intervention)
     ? (proj.intervention as Record<string, unknown>[])[0]
     : undefined;
@@ -165,14 +213,16 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
             {tagsList.length > 0 && (
               <div className="mt-2">
                 <div className="flex flex-wrap gap-2">
-                  {tagsList.map((tag: string) => (
-                    <span
-                      key={tag}
-                      className="inline-flex items-center rounded-full border border-[#2B4673]/30 bg-[#D0D5DB] px-4 h-6 py-2 text-xs font-semibold text-[#2B4673] transition-colors"
-                    >
-                      {tag}
-                    </span>
-                  ))}
+                  {String(tagsRaw ?? "")
+                    .split("\n")
+                    .map((tag: string) => (
+                      <span
+                        key={tag}
+                        className="inline-flex items-center rounded-full border border-[#2B4673]/30 bg-[#D0D5DB] px-4 h-6 py-2 text-xs font-semibold text-[#2B4673] transition-colors"
+                      >
+                        {tag}
+                      </span>
+                    ))}
                 </div>
               </div>
             )}
@@ -249,31 +299,34 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
             />
           )}
           {/* Project description section */}
-          {proj.description && String(proj.description).trim() !== "" && (
-            <section className="mt-10">
-              <p className="text-base text-blue-900 whitespace-pre-line">
-                {String(proj.description)}
-              </p>
-            </section>
-          )}
+          <section className="mt-10">
+            <When
+              ok={hasContent(proj.description) && hasContent(overview?.context)}
+            >
+              <CaptionText title="Overview" text={String(proj.description)} />
+              <br />
+              <CaptionText title="" text={String(overview?.context)} />
+            </When>
+          </section>
 
           {/* Narrative sections */}
           <section className="mt-10 space-y-8 text-sm leading-relaxed sm:text-base">
-            {overview?.context != null && String(overview.context) !== "" ? (
-              <CaptionText title="Context" text={String(overview.context)} />
-            ) : null}
+            <ShowWhenText value={overview?.challenges}>
+              {(text) => <CaptionText title="Challenges" text={text} />}
+            </ShowWhenText>
+            <ShowWhenText value={overview?.objectives}>
+              {(text) => <CaptionText title="Objectives" text={text} />}
+            </ShowWhenText>
+            <ShowWhenText value={overview?.approach}>
+              {(text) => <CaptionText title="Approach" text={text} />}
+            </ShowWhenText>
 
-            {overview?.challenges != null &&
-            String(overview.challenges) !== "" ? (
-              <CaptionText
-                title="Challenges"
-                text={String(overview.challenges)}
-              />
-            ) : null}
-            {/* Sketches image carousel with captions */}
-            {overview?.approach != null && String(overview.approach) !== "" ? (
-              <CaptionText title="Approach" text={String(overview.approach)} />
-            ) : null}
+            <RenderPhotos
+              photos={photos}
+              nameContains="master"
+              altFallback="Master Plan Drawing"
+            />
+
             {(photos ?? []).filter(
               (p) =>
                 p.url?.length &&
@@ -281,7 +334,7 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
                 p.name?.toLowerCase()?.includes("sketches"),
             ).length > 0 && (
               <section className="mt-10">
-                <div className="grid gap-4 grid-cols-1 xs:grid-cols-2 md:grid-cols-3 mt-2">
+                <div className="grid gap-4 grid-cols-5 lg:grid-cols-3 mt-2">
                   {(photos ?? [])
                     .filter(
                       (p) =>
@@ -290,119 +343,84 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
                         p.name?.toLowerCase()?.includes("sketches"),
                     )
                     .map((sketch, idx) => (
-                      <ImageWithCaption
-                        key={sketch.url ?? idx}
-                        src={getStrapiMedia(sketch.url)}
-                        alt={String(
-                          sketch.alt ??
-                            sketch.alternativeText ??
-                            sketch.name ??
-                            `Sketch ${idx + 1}`,
-                        )}
-                        description={sketch.caption ?? sketch.description ?? ""}
-                        width={1000}
-                        height={700}
-                      />
+                      <div key={sketch.url ?? idx}>
+                        <ImageWithCaption
+                          src={getStrapiMedia(sketch.url)}
+                          alt={String(
+                            sketch.alt ??
+                              sketch.alternativeText ??
+                              sketch.name ??
+                              `Sketch ${idx + 1}`,
+                          )}
+                          description=""
+                          width={700}
+                          height={500}
+                          className="w-full h-auto"
+                        />
+                        <p className="text-xs text-blue-700">
+                          {sketch.caption ?? ""}
+                        </p>
+                      </div>
                     ))}
                 </div>
               </section>
             )}
-            {(photos ?? []).filter((p) => {
-              if (!p.url?.length || p.url.length === 0 || !p.name) return false;
-              const name = p.name.toLowerCase();
-              return (
-                name.includes("master") ||
-                name.includes("floor-plan") ||
-                name.includes("unit") ||
-                name.includes("elevation") ||
-                name.includes("section-cut") ||
-                name.includes("facade-cut") ||
-                name.includes("construction-detail")
-              );
-            }).length > 0 && (
-              <section className="mt-10">
-                <div className="grid gap-4 grid-cols-1 xs:grid-cols-2 md:grid-cols-3 mt-2">
-                  {(() => {
-                    // Corrected order: floor-plan before unit, and eliminate duplicates by assigning photos only to their first matching group
-                    const order = [
-                      "master",
-                      "floor-plan",
-                      "unit",
-                      "elevation",
-                      "section-cut",
-                      "facade-cut",
-                      "construction-detail",
-                    ];
-                    const groupedPhotos: { [key: string]: typeof photos } = {};
-                    order.forEach((label) => (groupedPhotos[label] = []));
-                    (photos ?? []).forEach((p) => {
-                      if (!p?.url || p.url.length === 0 || !p.name) return;
-                      const name = p.name.toLowerCase();
-                      for (const label of order) {
-                        if (name.includes(label)) {
-                          // Avoid lint error for possibly undefined:
-                          (groupedPhotos[label] ?? []).push(p);
-                          break; // assign only to the first matching group
-                        }
-                      }
-                    });
-                    // Flatten in order, guard for possibly undefined with || []
-                    const sortedPhotos: typeof photos = [];
-                    order.forEach((label) => {
-                      (groupedPhotos[label] || []).forEach((photo) => {
-                        sortedPhotos.push(photo);
-                      });
-                    });
-                    return sortedPhotos.map((filteredPhoto, idx) => (
-                      <ImageWithCaption
-                        key={filteredPhoto.url ?? idx}
-                        src={getStrapiMedia(filteredPhoto.url)}
-                        alt={String(
-                          filteredPhoto.alt ??
-                            filteredPhoto.alternativeText ??
-                            filteredPhoto.name ??
-                            `Drawing ${idx + 1}`,
-                        )}
-                        description={
-                          filteredPhoto.caption ??
-                          filteredPhoto.description ??
-                          ""
-                        }
-                        width={1200}
-                        height={900}
-                        figureClassName="border-blue-600"
-                      />
-                    ));
-                  })()}
-                </div>
-              </section>
-            )}
+            <RenderPhotos
+              photos={photos}
+              nameContains="floor-plan"
+              title="Floor Plans"
+              altFallback="Floor Plan Drawing"
+            />
+            {/* <RenderPhotos
+              photos={photos}
+              nameContains="unit"
+              title="Units"
+              altFallback="Unit Drawing"
+            /> */}
+            <RenderPhotos
+              photos={photos}
+              nameContains="elevation"
+              title="Elevations"
+              altFallback="Elevation Drawing"
+            />
+            <RenderPhotos
+              photos={photos}
+              nameContains="section-cut"
+              title="Section Cuts"
+              altFallback="Section Cut Drawing"
+            />
+            <RenderPhotos
+              photos={photos}
+              nameContains="facade-cut"
+              title="Facade Cuts"
+              altFallback="Facade Cut Drawing"
+            />
+            <RenderPhotos
+              photos={photos}
+              nameContains="construction-detail"
+              title="Construction Details"
+              altFallback="Construction Detail Drawing"
+            />
 
-            {overview?.results != null && String(overview.results) !== "" ? (
-              <CaptionText title="Results" text={String(overview.results)} />
-            ) : null}
+            <ShowWhenText value={overview?.results}>
+              {(text) => <CaptionText title="Results" text={text} />}
+            </ShowWhenText>
 
-            {(overview?.learnings != null &&
-              String(overview.learnings) !== "") ||
-            (overview?.nextSteps != null &&
-              String(overview.nextSteps) !== "") ? (
+            <When
+              ok={
+                hasContent(overview?.learnings) ||
+                hasContent(overview?.nextSteps)
+              }
+            >
               <div className="grid gap-8 sm:grid-cols-2">
-                {overview?.learnings != null &&
-                String(overview.learnings) !== "" ? (
-                  <CaptionText
-                    title="Learnings"
-                    text={String(overview.learnings)}
-                  />
-                ) : null}
-                {overview?.nextSteps != null &&
-                String(overview.nextSteps) !== "" ? (
-                  <CaptionText
-                    title="Next steps"
-                    text={String(overview.nextSteps)}
-                  />
-                ) : null}
+                <ShowWhenText value={overview?.learnings}>
+                  {(text) => <CaptionText title="Learnings" text={text} />}
+                </ShowWhenText>
+                <ShowWhenText value={overview?.nextSteps}>
+                  {(text) => <CaptionText title="Next steps" text={text} />}
+                </ShowWhenText>
               </div>
-            ) : null}
+            </When>
           </section>
 
           {/* Key stages */}
