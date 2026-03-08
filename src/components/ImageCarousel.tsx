@@ -1,7 +1,16 @@
 "use client";
 
 import Image from "next/image";
-import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
+// @ts-expect-error package exports don't expose types to moduleResolution
+import { Splide, SplideSlide } from "@splidejs/react-splide";
+import type { Options, Splide as SplideInstance } from "@splidejs/splide";
+import { PhotoProvider, PhotoView } from "react-photo-view";
+import "react-photo-view/dist/react-photo-view.css";
+import "@splidejs/splide/dist/css/splide.min.css";
+
+/* Override react-photo-view fullscreen backdrop to beige */
+const photoViewBeigeBackdrop = `.PhotoView-Slider__Backdrop { background: #e8e4dc !important; }`;
 
 export type CarouselItem = {
   /** Full-size image URL */
@@ -14,11 +23,6 @@ export type CarouselItem = {
   thumbUrl?: string;
 };
 
-const MAX_THUMBS = 5;
-const TOTAL_SLOTS = 6; // 5 thumbs + 1 "more" slot; always show 6 so layout doesn't shift
-const SLOT_SIZE = 100;
-const SLOT_GAP = 8;
-const STRIP_WIDTH = TOTAL_SLOTS * SLOT_SIZE + (TOTAL_SLOTS - 1) * SLOT_GAP;
 const ASPECT_VIDEO = 16 / 9;
 
 export type ImageCarouselProps = {
@@ -34,10 +38,38 @@ export type ImageCarouselProps = {
   thumbsClassName?: string;
 };
 
+const mainOptions: Options = {
+  type: "fade",
+  heightRatio: 0.5,
+  pagination: false,
+  arrows: false,
+  cover: true,
+};
+
+const thumbnailOptions: Options = {
+  rewind: true,
+  fixedWidth: 104,
+  fixedHeight: 58,
+  isNavigation: true,
+  gap: 10,
+  focus: "center",
+  pagination: false,
+  cover: true,
+  dragMinThreshold: {
+    mouse: 4,
+    touch: 10,
+  },
+  breakpoints: {
+    640: {
+      fixedWidth: 66,
+      fixedHeight: 38,
+    },
+  },
+};
+
 /**
- * ArchDaily-style image carousel: one main image (16:9) with a horizontal strip of
- * up to 6 thumbnails below. Last slot shows blurred "{n}+" when more images exist.
- * Chevrons and keyboard navigate. Accessible: ARIA, focus management.
+ * ArchDaily-style image carousel: one main image (16:9) with Splide thumbnail
+ * navigation below. Main and thumbnails stay in sync. Accessible: ARIA, focus.
  */
 export function ImageCarousel({
   items,
@@ -46,314 +78,136 @@ export function ImageCarousel({
   className = "",
   thumbsClassName = "",
 }: ImageCarouselProps) {
-  const [selectedIndex, setSelectedIndex] = useState(0);
-  const thumbListRef = useRef<HTMLDivElement>(null);
   const regionId = useId();
-  const thumbId = (i: number) => `${regionId}-thumb-${i}`;
-
-  const selectedItem = items[selectedIndex] ?? null;
-  const count = items.length;
-
-  const goTo = useCallback(
-    (index: number) => {
-      const next = Math.max(0, Math.min(index, count - 1));
-      setSelectedIndex(next);
-      const list = thumbListRef.current;
-      if (list) {
-        const btn = list.querySelector<HTMLButtonElement>(
-          `[data-carousel-index="${next}"]`,
-        );
-        btn?.scrollIntoView({
-          block: "nearest",
-          inline: "center",
-          behavior: "smooth",
-        });
-      }
-    },
-    [count],
-  );
-
-  const goNext = useCallback(() => {
-    if (selectedIndex === count - 1) goTo(0);
-    else goTo(selectedIndex + 1);
-  }, [count, selectedIndex, goTo]);
-
-  const goPrev = useCallback(() => {
-    goTo(selectedIndex - 1);
-  }, [selectedIndex, goTo]);
-
-  const onKeyDown = useCallback(
-    (e: React.KeyboardEvent) => {
-      if (count <= 1) return;
-      if (e.key === "ArrowLeft") {
-        e.preventDefault();
-        goPrev();
-      } else if (e.key === "ArrowRight") {
-        e.preventDefault();
-        goNext();
-      } else if (e.key === "Home") {
-        e.preventDefault();
-        goTo(0);
-      } else if (e.key === "End") {
-        e.preventDefault();
-        goTo(count - 1);
-      }
-    },
-    [count, goPrev, goNext, goTo],
-  );
-
-  const windowSize = 5;
-  const windowStart =
-    count > windowSize
-      ? Math.max(0, Math.min(selectedIndex - 2, count - windowSize))
-      : 0;
-  const hasManyImages = count > MAX_THUMBS;
-  const remainingAfterWindow = count - (windowStart + windowSize);
-  const moreCount = remainingAfterWindow;
+  const mainId = `${regionId}-main-slider`;
+  const thumbId = `${regionId}-thumbnail-slider`;
+  const mainRef = useRef<{
+    splide: import("@splidejs/splide").default;
+    sync(s: import("@splidejs/splide").default): void;
+  } | null>(null);
+  const thumbsRef = useRef<{
+    splide: import("@splidejs/splide").default;
+  } | null>(null);
+  const [currentIndex, setCurrentIndex] = useState(0);
 
   useEffect(() => {
-    if (count <= 1 || selectedIndex < 0 || selectedIndex >= count) return;
-    const list = thumbListRef.current;
-    if (!list) return;
-    const btn = list.querySelector<HTMLButtonElement>(
-      `[data-carousel-index="${selectedIndex}"]`,
-    );
-    btn?.focus();
-  }, [selectedIndex, count]);
+    const main = mainRef.current;
+    const thumbs = thumbsRef.current?.splide;
+    if (main?.splide && thumbs) {
+      main.sync(thumbs);
+    }
+  }, [items.length]);
 
   if (!items.length) return null;
 
   return (
-    <section
-      id={regionId}
-      className={`overflow-hidden outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 ${className}`}
-      role="region"
-      aria-roledescription="carousel"
-      aria-label="Project image gallery"
-      tabIndex={0}
-      onKeyDown={onKeyDown}
-    >
-      {/* Main image: 16:9 container, image fills as cover */}
-      <div
-        className="relative overflow-hidden rounded-lg border border-zinc-300 bg-zinc-200/80"
-        style={{ aspectRatio: ASPECT_VIDEO }}
+    <PhotoProvider loop={items.length} maskClosable pullClosable>
+      <style dangerouslySetInnerHTML={{ __html: photoViewBeigeBackdrop }} />
+      <section
+        id={regionId}
+        data-carousel
+        className={`overflow-hidden outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 ${className}`}
+        role="region"
+        aria-roledescription="carousel"
+        aria-label="Project image gallery"
       >
-        {selectedItem && (
-          <Image
-            src={selectedItem.url}
-            alt={selectedItem.alt}
-            width={width}
-            height={height}
-            className="absolute inset-0 h-full w-full object-cover"
-            priority={selectedIndex === 0}
-            sizes="(max-width: 768px) 100vw, 640px"
-          />
-        )}
-        {selectedItem?.description && (
-          <p
-            className="absolute inset-x-0 bottom-0 bg-[#2B4673]/90 px-4 py-3 text-sm text-white"
-            id={`${regionId}-caption`}
-          >
-            {selectedItem.description}
-          </p>
-        )}
-      </div>
-
-      {/* Thumbnail strip */}
-      {count > 1 && (
-        <div
-          className={`mt-3 flex justify-between items-center gap-2 ${thumbsClassName}`}
+        {/* Main slider: fade, 16:9, no arrows/pagination; click opens react-photo-view */}
+        <Splide
+          id={mainId}
+          ref={mainRef}
+          options={mainOptions}
+          onMoved={(splide: SplideInstance) => setCurrentIndex(splide.index)}
+          aria-label="Main gallery"
         >
-          <button
-            type="button"
-            onClick={() => goTo(selectedIndex - 1)}
-            disabled={selectedIndex === 0}
-            aria-label="Previous image"
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-zinc-300 bg-white text-zinc-600 shadow-sm transition-colors hover:bg-zinc-50 hover:text-zinc-900 disabled:pointer-events-none disabled:opacity-40 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2"
-          >
-            <svg
-              className="h-5 w-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              aria-hidden
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M15 19l-7-7 7-7"
-              />
-            </svg>
-          </button>
-
-          <div
-            ref={thumbListRef}
-            className="flex shrink-0 gap-2 overflow-hidden py-1"
-            style={{
-              width: STRIP_WIDTH,
-              minWidth: STRIP_WIDTH,
-              maxWidth: STRIP_WIDTH,
-            }}
-            role="tablist"
-            aria-label="Image thumbnails"
-            aria-describedby={
-              selectedItem?.description ? `${regionId}-caption` : undefined
-            }
-          >
-            {Array.from({ length: TOTAL_SLOTS }, (_, slotIndex) => {
-              const slotStyle = {
-                width: SLOT_SIZE,
-                height: SLOT_SIZE,
-                minWidth: SLOT_SIZE,
-                minHeight: SLOT_SIZE,
-              };
-              if (hasManyImages) {
-                if (slotIndex < MAX_THUMBS) {
-                  const i = windowStart + slotIndex;
-                  const item = items[i];
-                  if (!item) return <div key={slotIndex} style={{ ...slotStyle, flexShrink: 0 }} aria-hidden />;
-                  const isSelected = i === selectedIndex;
-                  const thumbSrc = item.thumbUrl ?? item.url;
-                  return (
-                    <button
-                      key={`${i}-${item.url}`}
-                      type="button"
-                      id={thumbId(i)}
-                      data-carousel-index={i}
-                      role="tab"
-                      aria-selected={isSelected}
-                      aria-label={`View image ${i + 1} of ${count}: ${item.alt}`}
-                      tabIndex={isSelected ? 0 : -1}
-                      onClick={() => goTo(i)}
-                      className="relative shrink-0 overflow-hidden rounded border-2 bg-zinc-100 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2 motion-reduce:transition-none"
+          {items.map((item, index) => (
+            <SplideSlide key={`${item.url}-${index}`}>
+              <PhotoView src={item.url}>
+                <div
+                  className="relative cursor-pointer overflow-hidden rounded-sm border border-zinc-300 bg-zinc-200/80 transition-opacity hover:opacity-95"
+                  style={{ aspectRatio: ASPECT_VIDEO }}
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`View full size: ${item.alt}`}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      (e.currentTarget as HTMLElement).click();
+                    }
+                  }}
+                >
+                  <div className="absolute inset-0 flex items-center justify-center bg-zinc-200">
+                    <Image
+                      src={item.url}
+                      alt={item.alt}
+                      width={width}
+                      height={height}
+                      className="max-h-full max-w-full object-contain"
                       style={{
-                        ...slotStyle,
-                        borderColor: isSelected ? "#2B4673" : "transparent",
+                        width: "auto",
+                        height: "auto",
+                        maxWidth: "100%",
+                        maxHeight: "100%",
+                        display: "block",
+                        mixBlendMode: "multiply",
                       }}
-                    >
-                      <Image
-                        src={thumbSrc}
-                        alt=""
-                        width={SLOT_SIZE}
-                        height={SLOT_SIZE}
-                        className="h-full w-full object-cover"
-                        sizes={`${SLOT_SIZE}px`}
-                        aria-hidden
-                      />
-                    </button>
-                  );
-                }
-                return (
-                  <div
-                    key="more"
-                    className="relative flex shrink-0 items-center justify-center overflow-hidden rounded border-2 border-transparent bg-zinc-400"
-                    style={slotStyle}
-                    aria-hidden
-                  >
-                    {items[windowStart + MAX_THUMBS] && (
-                      <Image
-                        src={
-                          items[windowStart + MAX_THUMBS].thumbUrl ??
-                          items[windowStart + MAX_THUMBS].url
-                        }
-                        alt=""
-                        width={SLOT_SIZE}
-                        height={SLOT_SIZE}
-                        className="h-full w-full object-cover blur-md scale-110"
-                        sizes={`${SLOT_SIZE}px`}
-                      />
-                    )}
-                    <span className="absolute inset-0 flex items-center justify-center bg-black/40 text-lg font-semibold text-white">
-                      {moreCount}+
-                    </span>
+                      priority={index === 0}
+                      sizes="(max-width: 768px) 100vw, 640px"
+                    />
                   </div>
-                );
-              }
-              if (slotIndex < count) {
-                const i = slotIndex;
-                const item = items[i];
-                if (!item) return <div key={slotIndex} style={{ ...slotStyle, flexShrink: 0 }} aria-hidden />;
-                const isSelected = i === selectedIndex;
-                const thumbSrc = item.thumbUrl ?? item.url;
-                return (
-                  <button
-                    key={`${i}-${item.url}`}
-                    type="button"
-                    id={thumbId(i)}
-                    data-carousel-index={i}
-                    role="tab"
-                    aria-selected={isSelected}
-                    aria-label={`View image ${i + 1} of ${count}: ${item.alt}`}
-                    tabIndex={isSelected ? 0 : -1}
-                    onClick={() => goTo(i)}
-                    className="relative shrink-0 overflow-hidden rounded border-2 bg-zinc-100 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2 motion-reduce:transition-none"
-                    style={{
-                      ...slotStyle,
-                      borderColor: isSelected ? "#2B4673" : "transparent",
-                    }}
-                  >
+                </div>
+              </PhotoView>
+            </SplideSlide>
+          ))}
+        </Splide>
+
+      {/* Thumbnail navigation (Splide sync) */}
+      {items.length > 1 && (
+        <div className={`mt-3 ${thumbsClassName}`}>
+          <Splide
+            id={thumbId}
+            ref={thumbsRef}
+            options={thumbnailOptions}
+            aria-label="Image thumbnails"
+          >
+            {items.map((item, index) => {
+              const thumbSrc = item.thumbUrl ?? item.url;
+              return (
+                <SplideSlide key={`thumb-${item.url}-${index}`}>
+                  <div className="splide__slide__container relative h-full w-full overflow-hidden rounded border-2 border-transparent bg-zinc-100">
                     <Image
                       src={thumbSrc}
                       alt=""
-                      width={SLOT_SIZE}
-                      height={SLOT_SIZE}
+                      width={104}
+                      height={58}
                       className="h-full w-full object-cover"
-                      sizes={`${SLOT_SIZE}px`}
-                      aria-hidden
+                      sizes="104px"
                     />
-                  </button>
-                );
-              }
-              return <div key={`empty-${slotIndex}`} style={{ ...slotStyle, flexShrink: 0 }} aria-hidden />;
+                  </div>
+                </SplideSlide>
+              );
             })}
-          </div>
-
-          <button
-            type="button"
-            onClick={goNext}
-            aria-label={
-              selectedIndex === count - 1
-                ? "Next image (back to first)"
-                : "Next image"
-            }
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-zinc-300 bg-white text-zinc-600 shadow-sm transition-colors hover:bg-zinc-50 hover:text-zinc-900 disabled:pointer-events-none disabled:opacity-40 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2"
-          >
-            <svg
-              className="h-5 w-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              aria-hidden
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M9 5l7 7-7 7"
-              />
-            </svg>
-          </button>
+          </Splide>
         </div>
       )}
 
-      {/* Photo count: current / total, updates as user navigates */}
-      {count > 1 && (
+      {/* Photo count: current / total */}
+      {items.length > 1 && (
         <p
           className="mt-2 text-center text-xs text-zinc-500 tabular-nums"
           aria-live="polite"
           aria-atomic="true"
         >
-          {selectedIndex + 1} / {count}
+          {currentIndex + 1} / {items.length}
         </p>
       )}
 
       {/* Live region: announce slide change for screen readers */}
-      {count > 1 && (
+      {items.length > 1 && items[currentIndex] && (
         <p className="sr-only" aria-live="polite" aria-atomic="true">
-          Image {selectedIndex + 1} of {count}. {selectedItem?.alt}
+          Image {currentIndex + 1} of {items.length}. {items[currentIndex].alt}
         </p>
       )}
     </section>
+    </PhotoProvider>
   );
 }

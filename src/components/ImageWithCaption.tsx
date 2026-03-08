@@ -39,12 +39,14 @@ export function ImageWithCaption({
         alt={alt}
         className={`h-auto w-full object-fit mix-blend-multiply ${className ?? ""}`}
       />
-      <figcaption
-        id={captionId}
-        className="absolute inset-x-0 bottom-0 translate-y-full bg-[#2B4673]/90 px-4 py-3 text-sm text-white transition-transform duration-200 ease-out group-hover:translate-y-0 group-focus-within:translate-y-0 motion-reduce:transition-none motion-reduce:translate-y-0"
-      >
-        {captionText}
-      </figcaption>
+      {captionText !== "" && (
+        <figcaption
+          id={captionId}
+          className="absolute inset-x-0 bottom-0 translate-y-full bg-black/40 rounded-t-sm px-4 py-3 text-sm text-white transition-transform duration-200 ease-out group-hover:translate-y-0 group-focus-within:translate-y-0 motion-reduce:transition-none motion-reduce:translate-y-0"
+        >
+          {captionText}
+        </figcaption>
+      )}
     </figure>
   );
 }

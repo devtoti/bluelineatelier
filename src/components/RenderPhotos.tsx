@@ -24,6 +24,28 @@ export type RenderPhotosProps = {
   height?: number;
 };
 
+/**
+ * "Natural sort" helper that compares two strings of a photo name in a way so
+ * "unit-floor-plan-01" < "unit-floor-plan2".
+ * Extracts any trailing group of digits from the photo name and sorts numerically,
+ * otherwise falls back to regular string comparison.
+ */
+function naturalCompare(a: string, b: string): number {
+  const re = /(\d+)(?!.*\d)/; // last group of digits in string
+  const matchA = a.match(re);
+  const matchB = b.match(re);
+
+  if (matchA && matchB) {
+    const [numA, numB] = [parseInt(matchA[1], 10), parseInt(matchB[1], 10)];
+    if (a.slice(0, matchA.index) === b.slice(0, matchB.index)) {
+      // If the prefix before the number is equal, compare on number
+      return numA - numB;
+    }
+  }
+  // fallback: localeCompare for consistent alphabetical order
+  return a.localeCompare(b, undefined, { numeric: true, sensitivity: "base" });
+}
+
 function hasMatchingPhoto(
   photos: PhotoGridItem[],
   nameContains: string,
@@ -40,13 +62,19 @@ function hasMatchingPhoto(
 
 function filterPhotos(photos: PhotoGridItem[], nameContains: string) {
   const key = nameContains.toLowerCase();
-  return photos.filter(
-    (p) =>
-      typeof p?.url === "string" &&
-      p.url.length > 0 &&
-      typeof p.name === "string" &&
-      p.name.toLowerCase().includes(key),
-  );
+  return photos
+    .filter(
+      (p) =>
+        typeof p?.url === "string" &&
+        p.url.length > 0 &&
+        typeof p.name === "string" &&
+        p.name.toLowerCase().includes(key),
+    )
+    .sort((a, b) => {
+      const nameA = a.name ?? "";
+      const nameB = b.name ?? "";
+      return naturalCompare(nameA, nameB);
+    });
 }
 
 export function RenderPhotos({

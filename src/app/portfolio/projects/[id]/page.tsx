@@ -20,7 +20,7 @@ const CaptionText = ({
   text: string | undefined;
 }) => {
   return (
-    <div className="mt-3 whitespace-pre-line text-[#2B4673] max-w-[40ch]">
+    <div className="mt-3 whitespace-pre-line text-[#2B4673]">
       <p className="pb-2 text-base font-bold uppercase tracking-[0.15em]">
         {title}
       </p>
@@ -75,10 +75,9 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
   const filterQuery = pcodeVariants
     .map((v, i) => `filters[pcode][$in][${i}]=${encodeURIComponent(v)}`)
     .join("&");
-  const res = await fetch(
-    `${baseUrl}/api/projects?${filterQuery}&populate=*`,
-    { next: { revalidate: 60 } },
-  );
+  const res = await fetch(`${baseUrl}/api/projects?${filterQuery}&populate=*`, {
+    next: { revalidate: 60 },
+  });
 
   if (!res.ok) {
     if (res.status === 404) {
@@ -210,14 +209,14 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
           {/* Masthead */}
           <header className="border-b border-zinc-300 pb-6">
             <p className="text-xs font-semibold uppercase tracking-[0.3em] opacity-70">
-              {normalizedId} • {String(proj.domain ?? "").toUpperCase()} •{" "}
-              {getSectionLabel(String(proj.pcode ?? id))}
+              {normalizedId} • {String(proj.domain ?? "").toUpperCase()}
+              {/* {getSectionLabel(String(proj.pcode ?? id))} */}
             </p>
             <h1 className="mt-3 font-heading text-2xl font-bold tracking-tight sm:text-3xl">
               {String(proj.name ?? "")}
             </h1>
             {proj.summary != null && String(proj.summary) !== "" && (
-              <p className="mt-4 max-w-2xl text-sm leading-relaxed italic text-[#2B4673] opacity-75 sm:text-base">
+              <p className="mt-2 mb-4 max-w-2xl text-sm leading-relaxed italic text-[#2B4673] opacity-75 sm:text-base">
                 {String(proj.summary)}
               </p>
             )}
@@ -229,7 +228,7 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
                     .map((tag: string) => (
                       <span
                         key={tag}
-                        className="inline-flex items-center rounded-full border border-[#2B4673]/30 bg-[#D0D5DB] px-4 h-6 py-2 text-xs font-semibold text-[#2B4673] transition-colors"
+                        className="inline-flex items-center rounded-full border border-[#2B4673]/30 bg-gray-200  italic px-4 h-7 py-2 text-xs font-semibold text-[#2B4673] transition-colors"
                       >
                         {tag}
                       </span>
@@ -239,67 +238,6 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
             )}
           </header>
 
-          {/* Meta grid */}
-          <section className="overview mt-6 grid gap-6 text-xs sm:grid-cols-3">
-            {
-              (
-                <>
-                  <dl className="space-y-2">
-                    <dt className="text-[0.65rem] uppercase tracking-[0.25em] opacity-70">
-                      Location
-                    </dt>
-                    <dd>
-                      {[
-                        String(site?.city ?? ""),
-                        String(site?.country ?? ""),
-                      ].join(", ")}
-                    </dd>
-                    <dt className="text-[0.65rem] uppercase tracking-[0.25em] opacity-70">
-                      Site
-                    </dt>
-                    <dd>{String(site?.location ?? "")}</dd>
-                  </dl>
-
-                  <dl className="space-y-2">
-                    <dt className="text-[0.65rem] uppercase tracking-[0.25em] opacity-70">
-                      Years
-                    </dt>
-                    <dd>
-                      {String(interventionData?.yearStarted ?? "")}
-                      {interventionData?.yearCompleted != null
-                        ? ` – ${String(interventionData.yearCompleted)}`
-                        : " – Ongoing"}
-                    </dd>
-                    {
-                      (interventionData?.area != null ? (
-                        <>
-                          <dt className="text-[0.65rem] uppercase tracking-[0.25em] opacity-70">
-                            Area
-                          </dt>
-                          <dd>
-                            {Number(interventionData.area).toLocaleString()} m²
-                          </dd>
-                        </>
-                      ) : null) as ReactNode
-                    }
-                  </dl>
-
-                  <dl className="space-y-2">
-                    {
-                      (collaboratorsList.length > 0 ? (
-                        <>
-                          <dt className="text-[0.65rem] uppercase tracking-[0.25em] opacity-70">
-                            Collaborators
-                          </dt>
-                          <dd>{collaboratorsList.join(", ")}</dd>
-                        </>
-                      ) : null) as ReactNode
-                    }
-                  </dl>
-                </>
-              ) as ReactNode
-            }
-          </section>
           {/* Hero image carousel */}
           {carouselItems.length > 0 && (
             <ImageCarousel
@@ -308,6 +246,61 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
               height={800}
               className="mt-8"
             />
+          )}
+          {/* Meta grid */}
+          {proj.domain === "architecture" && (
+            <section className="overview mt-8 bg-black/5 py-4 px-2 grid gap-6 text-xs sm:grid-cols-3">
+              <>
+                <dl className="space-y-2">
+                  <dt className="text-[0.65rem] uppercase tracking-[0.25em] opacity-70">
+                    Location
+                  </dt>
+                  <dd>
+                    {[
+                      String(site?.city ?? ""),
+                      String(site?.country ?? ""),
+                    ].join(", ")}
+                  </dd>
+                  <dt className="text-[0.65rem] uppercase tracking-[0.25em] opacity-70">
+                    Site
+                  </dt>
+                  <dd>{String(site?.location ?? "")}</dd>
+                </dl>
+
+                <dl className="space-y-2">
+                  <dt className="text-[0.65rem] uppercase tracking-[0.25em] opacity-70">
+                    Years
+                  </dt>
+                  <dd>
+                    {String(interventionData?.yearStarted ?? "")}
+                    {interventionData?.yearCompleted != null
+                      ? ` – ${String(interventionData.yearCompleted)}`
+                      : " – Ongoing"}
+                  </dd>
+                  {interventionData?.area != null ? (
+                    <>
+                      <dt className="text-[0.65rem] uppercase tracking-[0.25em] opacity-70">
+                        Area
+                      </dt>
+                      <dd>
+                        {Number(interventionData.area).toLocaleString()} m²
+                      </dd>
+                    </>
+                  ) : null}
+                </dl>
+
+                <dl className="space-y-2">
+                  {collaboratorsList.length > 0 ? (
+                    <>
+                      <dt className="text-[0.65rem] uppercase tracking-[0.25em] opacity-70">
+                        Collaborators
+                      </dt>
+                      <dd>{collaboratorsList.join(", ")}</dd>
+                    </>
+                  ) : null}
+                </dl>
+              </>
+            </section>
           )}
           {/* Project description section */}
           <section className="mt-10">
