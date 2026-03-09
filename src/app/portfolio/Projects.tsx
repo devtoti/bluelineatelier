@@ -1,5 +1,5 @@
-import { use } from "react";
 import Link from "next/link";
+import type { StrapiProjectsResponse } from "@/lib/strapiProjects";
 
 function toTwoDigitPcode(value: string | number | undefined): string {
   if (value == null) return "00";
@@ -7,11 +7,12 @@ function toTwoDigitPcode(value: string | number | undefined): string {
   return s.length === 1 ? `0${s}` : s.padStart(2, "0");
 }
 
-export default function Projects({ projects }: { projects: Promise<any> }) {
-  const allProjects = use(projects);
-  const items: any[] = Array.isArray(allProjects?.data)
-    ? allProjects.data
-    : [];
+export default function Projects({
+  projects,
+}: {
+  projects: StrapiProjectsResponse;
+}) {
+  const items: unknown[] = Array.isArray(projects?.data) ? projects.data : [];
 
   return (
     <section aria-label="Projects" className="w-full text-left">

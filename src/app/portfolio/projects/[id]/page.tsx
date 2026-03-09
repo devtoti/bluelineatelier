@@ -6,6 +6,7 @@ import { getStrapiMedia } from "../../../../utils/getStrapiMedia";
 import { RenderPhotos } from "@/components/RenderPhotos";
 import { ImageCarousel } from "../../../../components/ImageCarousel";
 import { ImageWithCaption } from "@/components/ImageWithCaption";
+import { getProjects, findProjectByPcode, type StrapiProjectNode } from "@/lib/strapiProjects";
 const PROJECT_ORDER = ["00", "01", "02", "03", "04", "05", "06", "07"] as const;
 
 type ProjectPageProps = {
@@ -62,32 +63,22 @@ function normalizePcode(code: string): string {
 export default async function ProjectPage({ params }: ProjectPageProps) {
   const { id } = await params;
   const normalizedId = normalizePcode(id);
-  const baseUrl = process.env.NEXT_PUBLIC_STRAPI_URL;
 
-  if (!baseUrl) {
-    throw new Error("NEXT_PUBLIC_STRAPI_URL is not defined");
+  let data: StrapiProjectNode[] = [];
+  try {
+    const res = await getProjects();
+    data = res.data ?? [];
+  } catch (err) {
+    console.error("Strapi fetch failed:", err);
   }
-
   const altPcode = normalizedId.replace(/^0+/, "") || "0";
   const pcodeVariants = [normalizedId, altPcode].filter(
     (v, i, a) => a.indexOf(v) === i,
   );
-  const filterQuery = pcodeVariants
-    .map((v, i) => `filters[pcode][$in][${i}]=${encodeURIComponent(v)}`)
-    .join("&");
-  const res = await fetch(`${baseUrl}/api/projects?${filterQuery}&populate=*`, {
-    next: { revalidate: 60 },
-  });
-
-  if (!res.ok) {
-    if (res.status === 404) {
-      notFound();
-    }
-    throw new Error(`Failed to fetch project ${id}`);
-  }
-
-  const { data } = await res.json();
-  const projectNode = Array.isArray(data) ? data[0] : data;
+  const projectNode = findProjectByPcode(
+    Array.isArray(data) ? data : [],
+    pcodeVariants,
+  );
   const attrs =
     projectNode?.attributes ?? (projectNode as Record<string, unknown>);
 

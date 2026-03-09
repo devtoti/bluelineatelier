@@ -1,20 +1,19 @@
-"use server";
-
 import Link from "next/link";
 import Image from "next/image";
 import CountdownTimer from "./CountdownTimer";
 import { Suspense } from "react";
 import Projects from "./Projects";
+import { getProjects, type StrapiProjectsResponse } from "@/lib/strapiProjects";
+
+const emptyProjects: StrapiProjectsResponse = { data: [] };
 
 export default async function Portfolio() {
-  const getProjects = async () => {
-    const response = await fetch(
-      `${process.env.NEXT_PUBLIC_STRAPI_URL}/api/projects?populate=*`,
-    );
-    const projects = await response.json();
-    return projects;
-  };
-const projects = getProjects();
+  let projectsData = emptyProjects;
+  try {
+    projectsData = await getProjects();
+  } catch (err) {
+    console.error("Strapi fetch failed:", err);
+  }
   return (
     <div
       className="relative min-h-[100svh] font-sans overflow-hidden"
@@ -69,9 +68,14 @@ const projects = getProjects();
             height={300}
             className="mx-auto opacity-50 mt-8"
           />
+          {projectsData.data.length === 0 && (
+            <p className="text-amber-400/90 text-sm rounded-md bg-amber-950/30 border border-amber-700/40 px-4 py-3 mb-4">
+              Strapi is not running. Start it with <kbd className="font-mono text-xs px-1.5 py-0.5 rounded bg-zinc-800">npm run develop</kbd> in your Strapi project (e.g. <code className="text-zinc-400">localhost:1337</code>).
+            </p>
+          )}
           <div className="mt-10 w-full flex flex-col gap-4 sm:flex-row sm:gap-6 sm:justify-between">
             <Suspense fallback={<div>Loading projects...</div>}>
-              <Projects projects={projects} />
+              <Projects projects={projectsData} />
             </Suspense>
             <a
               href="/docs/antonio-ruiz-portfolio-architecture.pdf"
