@@ -9,7 +9,10 @@ type ClientRootLayoutProps = {
   fontClassNames: string;
 };
 
-export function ClientRootLayout({ children, fontClassNames }: ClientRootLayoutProps) {
+export function ClientRootLayout({
+  children,
+  fontClassNames,
+}: ClientRootLayoutProps) {
   const pathname = usePathname();
 
   if (pathname === "/portfolio" || pathname.startsWith("/portfolio/")) {
@@ -17,9 +20,7 @@ export function ClientRootLayout({ children, fontClassNames }: ClientRootLayoutP
   }
 
   return (
-    <div
-      className={`${fontClassNames} flex min-h-screen flex-col antialiased`}
-    >
+    <div className={`${fontClassNames} flex min-h-screen flex-col antialiased`}>
       <div
         className="flex flex-1 flex-col font-sans"
         style={{ backgroundColor: "#0C1222" }}

@@ -7,6 +7,10 @@ import { RenderPhotos } from "@/components/RenderPhotos";
 import { ImageCarousel } from "../../../../components/ImageCarousel";
 import { ImageWithCaption } from "@/components/ImageWithCaption";
 import { getProjects, findProjectByPcode, type StrapiProjectNode } from "@/lib/strapiProjects";
+import { PageContent } from "@/components/PageContent";
+import { ProjectNavigation } from "@/components/ProjectNavigation";
+import { ContactInfo } from "@/components/ContactInfo";
+
 const PROJECT_ORDER = ["00", "01", "02", "03", "04", "05", "06", "07"] as const;
 
 type ProjectPageProps = {
@@ -60,9 +64,29 @@ function normalizePcode(code: string): string {
   const n = code.replace(/^0+/, "") || "0";
   return n.length === 1 ? `0${n}` : n.padStart(2, "0");
 }
+function buildProjectNavItems(data: StrapiProjectNode[]) {
+  const list: { id: string; name: string; href?: string }[] = [];
+  list.push({ id: "00", name: "Table of contents", href: "/portfolio/toc" });
+  for (let i = 1; i <= 6; i++) {
+    const code = i < 10 ? `0${i}` : String(i);
+    const node = findProjectByPcode(data, [code]);
+    const attrs = (node?.attributes ?? node) as Record<string, unknown> | undefined;
+    const name = attrs
+      ? String(attrs.name ?? attrs.title ?? `Project ${code}`).trim() || `Project ${code}`
+      : `Project ${code}`;
+    list.push({ id: code, name });
+  }
+  list.push({ id: "07", name: "Contact" });
+  return list;
+}
+
 export default async function ProjectPage({ params }: ProjectPageProps) {
   const { id } = await params;
   const normalizedId = normalizePcode(id);
+
+  if (normalizedId === "00") {
+    redirect("/portfolio/toc");
+  }
 
   let data: StrapiProjectNode[] = [];
   try {
@@ -71,6 +95,37 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
   } catch (err) {
     console.error("Strapi fetch failed:", err);
   }
+
+  if (normalizedId === "07") {
+    const projectNavItems = buildProjectNavItems(data);
+    return (
+      <div
+        className="project relative min-h-[100svh] font-sans"
+        style={{ backgroundColor: "#0C1222" }}
+      >
+        <div className="portfolio-grain" aria-hidden />
+        <div className="portfolio-grid" aria-hidden />
+        <div className="fixed bottom-6 left-6 z-20 hidden lg:block">
+          <ProjectNavigation items={projectNavItems} activeId="07" />
+        </div>
+        <div className="relative z-10 mx-auto min-h-svh max-w-2xl px-6 py-12">
+          <h1 className="font-heading text-2xl font-bold text-[#53A4D7] mb-2">
+            contactInfo<span className="text-[#BB2EB5]">(</span>
+          </h1>
+          <p className="text-zinc-400 text-sm mb-8">
+            Get in touch for collaborations and inquiries.
+          </p>
+          <ContactInfo
+            name="Your Name"
+            description="Architect, designer, or a short line about what you do."
+            email="email@example.com"
+            phone="+1 234 567 8900"
+          />
+        </div>
+      </div>
+    );
+  }
+
   const altPcode = normalizedId.replace(/^0+/, "") || "0";
   const pcodeVariants = [normalizedId, altPcode].filter(
     (v, i, a) => a.indexOf(v) === i,
@@ -183,6 +238,20 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
   const keyStages = (
     proj.keyStages as Record<string, unknown>[] | undefined
   )?.[0] as Record<string, unknown> | undefined;
+
+  const pageSections = [
+    carouselItems.length > 0 && { id: "gallery", label: "Gallery" },
+    hasContent(proj.description) && hasContent(overview?.context) && { id: "overview", label: "Overview" },
+    proj.domain === "architecture" && { id: "details", label: "Project details" },
+    hasContent(overview?.challenges) && { id: "challenges", label: "Challenges" },
+    hasContent(overview?.objectives) && { id: "objectives", label: "Objectives" },
+    hasContent(overview?.approach) && { id: "approach", label: "Approach" },
+    hasContent(overview?.results) && { id: "results", label: "Results" },
+    keyStages && { id: "project-timeline", label: "Project timeline" },
+  ].filter((s): s is { id: string; label: string } => Boolean(s));
+
+  const projectNavItems = buildProjectNavItems(data);
+
   return (
     <div
       className="project relative min-h-[100svh] font-sans text-[#2B4673]"
@@ -190,6 +259,14 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
     >
       <div className="portfolio-grain-light" aria-hidden />
       <div className="portfolio-grid-light" aria-hidden />
+
+      <div className="fixed top-24 right-6 z-20 hidden lg:block">
+        <PageContent sections={pageSections} />
+      </div>
+
+      <div className="fixed bottom-6 left-6 z-20 hidden lg:block">
+        <ProjectNavigation items={projectNavItems} activeId={normalizedId} />
+      </div>
 
       <div className="relative z-10 mx-auto max-w-3xl">
         <article className="mt-8 p-6 sm:p-8">
@@ -229,18 +306,20 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
             )}
           </header>
 
-          {/* Hero image carousel */}
+          {/* Hero image carousel / Gallery */}
           {carouselItems.length > 0 && (
-            <ImageCarousel
-              items={carouselItems}
-              width={1200}
-              height={800}
-              className="mt-8"
-            />
+            <section id="gallery" className="mt-8">
+              <ImageCarousel
+                items={carouselItems}
+                width={1200}
+                height={800}
+                className=""
+              />
+            </section>
           )}
           {/* Meta grid */}
           {proj.domain === "architecture" && (
-            <section className="overview mt-8 bg-black/5 py-4 px-2 grid gap-6 text-xs sm:grid-cols-3">
+            <section id="details" className="overview mt-8 bg-black/5 py-4 px-2 grid gap-6 text-xs sm:grid-cols-3">
               <>
                 <dl className="space-y-2">
                   <dt className="text-[0.65rem] uppercase tracking-[0.25em] opacity-70">
@@ -294,7 +373,7 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
             </section>
           )}
           {/* Project description section */}
-          <section className="mt-10">
+          <section id="overview" className="mt-10">
             <When
               ok={hasContent(proj.description) && hasContent(overview?.context)}
             >
@@ -307,13 +386,25 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
           {/* Narrative sections */}
           <section className="mt-10 space-y-8 text-sm leading-relaxed sm:text-base">
             <ShowWhenText value={overview?.challenges}>
-              {(text) => <CaptionText title="Challenges" text={text} />}
+              {(text) => (
+                <div id="challenges">
+                  <CaptionText title="Challenges" text={text} />
+                </div>
+              )}
             </ShowWhenText>
             <ShowWhenText value={overview?.objectives}>
-              {(text) => <CaptionText title="Objectives" text={text} />}
+              {(text) => (
+                <div id="objectives">
+                  <CaptionText title="Objectives" text={text} />
+                </div>
+              )}
             </ShowWhenText>
             <ShowWhenText value={overview?.approach}>
-              {(text) => <CaptionText title="Approach" text={text} />}
+              {(text) => (
+                <div id="approach">
+                  <CaptionText title="Approach" text={text} />
+                </div>
+              )}
             </ShowWhenText>
 
             <RenderPhotos
@@ -398,7 +489,11 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
             />
 
             <ShowWhenText value={overview?.results}>
-              {(text) => <CaptionText title="Results" text={text} />}
+              {(text) => (
+                <div id="results">
+                  <CaptionText title="Results" text={text} />
+                </div>
+              )}
             </ShowWhenText>
 
             <When
@@ -409,17 +504,25 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
             >
               <div className="grid gap-8 sm:grid-cols-2">
                 <ShowWhenText value={overview?.learnings}>
-                  {(text) => <CaptionText title="Learnings" text={text} />}
+                  {(text) => (
+                    <div id="learnings">
+                      <CaptionText title="Learnings" text={text} />
+                    </div>
+                  )}
                 </ShowWhenText>
                 <ShowWhenText value={overview?.nextSteps}>
-                  {(text) => <CaptionText title="Next steps" text={text} />}
+                  {(text) => (
+                    <div id="next-steps">
+                      <CaptionText title="Next steps" text={text} />
+                    </div>
+                  )}
                 </ShowWhenText>
               </div>
             </When>
           </section>
 
           {/* Key stages */}
-          <section className="mt-10 grid gap-8 border-t border-zinc-300 pt-6 text-xs sm:grid-cols-2">
+          <section id="project-timeline" className="mt-10 grid gap-8 border-t border-zinc-300 pt-6 text-xs sm:grid-cols-2">
             {keyStages && (
               <div>
                 <h2 className="font-heading text-[0.7rem] font-semibold uppercase tracking-[0.3em] opacity-70">
@@ -449,6 +552,7 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
 
           {(prevCode || nextCode) && (
             <nav
+              id="navigation"
               aria-label="Project navigation"
               className="mt-10 flex flex-col gap-4 border-t border-zinc-300 pt-6 text-sm sm:flex-row sm:items-center sm:justify-between"
             >

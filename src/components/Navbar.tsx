@@ -9,7 +9,7 @@ export default function Navbar() {
   const pathname = usePathname();
 
   if (pathname?.startsWith("/portfolio/projects/")) {
-    return null;
+    return <nav className="hidden"></nav>;
   }
 
   return (
