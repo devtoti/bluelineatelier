@@ -43,10 +43,10 @@ export function ContactInfo({
     <div
       className={`blueprint-container relative w-full md:w-2/5 h-min max-w-96 text-center flex flex-col align-center justify-center bg-black/5 p-4 py-8 my-auto ${className}`.trim()}
     >
+      {/* <span className="deco"></span>
       <span className="deco"></span>
       <span className="deco"></span>
-      <span className="deco"></span>
-      <span className="deco"></span>
+      <span className="deco"></span> */}
       <span className="bracket top-0 left-0 absolute w-5 h-5 border-t-2 border-l-2 border-white opacity-50"></span>
       <span className="bracket top-0 right-0 absolute w-5 h-5 border-t-2 border-r-2 border-white opacity-50"></span>
       <span className="bracket bottom-0 left-0 absolute w-5 h-5 border-b-2 border-l-2 border-white opacity-50"></span>

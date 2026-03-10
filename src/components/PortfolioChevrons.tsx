@@ -10,16 +10,21 @@ const PORTFOLIO_SEQUENCE: {
   next: string | null;
   prev: string | null;
 }[] = [
-  { path: "/portfolio", next: "/portfolio/toc", prev: null },
+  { path: "/portfolio", next: "/portfolio/00", prev: null },
   {
-    path: "/portfolio/toc",
+    path: "/portfolio/00",
+    next: "/portfolio/projects/01",
+    prev: "/portfolio",
+  },
+  {
+    path: "/portfolio/00",
     next: "/portfolio/projects/01",
     prev: "/portfolio",
   },
   {
     path: "/portfolio/projects/01",
     next: "/portfolio/projects/02",
-    prev: "/portfolio/toc",
+    prev: "/portfolio/00",
   },
   {
     path: "/portfolio/projects/02",
@@ -73,7 +78,7 @@ function getPrevNext(pathname: string): {
       };
     if (i === 0)
       return {
-        prev: "/portfolio/toc",
+        prev: "/portfolio/00",
         next: `/portfolio/projects/${order[1]}`,
       };
     if (i === order.length - 1)
@@ -85,24 +90,44 @@ function getPrevNext(pathname: string): {
   return { prev: null, next: null };
 }
 
+// Color for chevrons on covers (not project pages)
+const coverChevronColor = "#C53135";
+const projectPageChevronColor = "#2B4673";
+
+// Project page: /portfolio/projects/XX, cover pages: /portfolio, /portfolio/00
+function isProjectPage(pathname: string | null): boolean {
+  return !!pathname && /^\/portfolio\/projects\/(01|02|03|04|05|06|07)$/.test(pathname);
+}
+function isPortfolio(pathname: string | null): boolean {
+  return pathname === "/portfolio" || pathname?.startsWith("/portfolio/");
+}
+
+// Tailwind-based classes are otherwise unchanged; color is overridden by inline style if needed.
 const chevronLinkClass =
   "flex h-16 w-16 items-center justify-center text-[#2B4673]/50 transition-colors hover:border-[#2B4673]/70 hover:bg-black/5 hover:text-[#2B4673] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2B4673]/60 z-10";
 
 /** Renders the left (previous) chevron or nothing. Place in grid col 1 for consistent coordinates. */
 export function PortfolioChevronLeft() {
   const pathname = usePathname();
-  const isPortfolio =
-    pathname === "/portfolio" || pathname?.startsWith("/portfolio/");
-  if (!isPortfolio || !pathname) return null;
+  if (!isPortfolio(pathname) || !pathname) return null;
+
   const { prev } = getPrevNext(pathname);
   if (prev == null) return <span className="w-10 h-10" aria-hidden />;
+
+  // Use red color for covers, standard blue for project pages
+  const color = isProjectPage(pathname) ? projectPageChevronColor : coverChevronColor;
+
   return (
     <Link
       href={prev}
       className={chevronLinkClass}
       aria-label="Previous project"
     >
-      <RiArrowLeftWideLine className="h-10 w-10" aria-hidden />
+      <RiArrowLeftWideLine
+        className="h-10 w-10"
+        aria-hidden
+        style={{ color }}
+      />
     </Link>
   );
 }
@@ -110,14 +135,21 @@ export function PortfolioChevronLeft() {
 /** Renders the right (next) chevron or nothing. Place in grid col 3 for consistent coordinates. */
 export function PortfolioChevronRight() {
   const pathname = usePathname();
-  const isPortfolio =
-    pathname === "/portfolio" || pathname?.startsWith("/portfolio/");
-  if (!isPortfolio || !pathname) return null;
+  if (!isPortfolio(pathname) || !pathname) return null;
+
   const { next } = getPrevNext(pathname);
   if (next == null) return <span className="w-10 h-10" aria-hidden />;
+
+  // Use red color for covers, standard blue for project pages
+  const color = isProjectPage(pathname) ? projectPageChevronColor : coverChevronColor;
+
   return (
     <Link href={next} className={chevronLinkClass} aria-label="Next project">
-      <RiArrowRightWideLine className="h-10 w-10" aria-hidden />
+      <RiArrowRightWideLine
+        className="h-10 w-10"
+        aria-hidden
+        style={{ color }}
+      />
     </Link>
   );
 }

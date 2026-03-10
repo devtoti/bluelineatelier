@@ -70,7 +70,7 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
   const normalizedId = normalizePcode(id);
 
   if (normalizedId === "00") {
-    redirect("/portfolio/toc");
+    redirect("/portfolio/00");
   }
 
   if (normalizedId === "07") {

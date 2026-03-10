@@ -12,6 +12,11 @@ import "@splidejs/splide/dist/css/splide.min.css";
 /* Override react-photo-view fullscreen backdrop to beige */
 const photoViewBeigeBackdrop = `.PhotoView-Slider__Backdrop { background: #e8e4dc !important; }`;
 
+/* Thumbnail strip: no arrows; Splide focus "center" keeps active slide centered */
+const thumbnailCarouselStyles = `
+  [data-thumbnail-carousel] .splide__arrows { display: none !important; }
+`;
+
 export type CarouselItem = {
   /** Full-size image URL */
   url: string;
@@ -54,7 +59,9 @@ const thumbnailOptions: Options = {
   gap: 10,
   focus: "center",
   pagination: false,
+  arrows: false,
   cover: true,
+  trimSpace: false,
   dragMinThreshold: {
     mouse: 4,
     touch: 10,
@@ -103,6 +110,7 @@ export function ImageCarousel({
   return (
     <PhotoProvider loop={items.length} maskClosable pullClosable>
       <style dangerouslySetInnerHTML={{ __html: photoViewBeigeBackdrop }} />
+      <style dangerouslySetInnerHTML={{ __html: thumbnailCarouselStyles }} />
       <section
         id={regionId}
         data-carousel
@@ -160,9 +168,12 @@ export function ImageCarousel({
           ))}
         </Splide>
 
-      {/* Thumbnail navigation (Splide sync) */}
+      {/* Thumbnail navigation (Splide sync); no arrows, active slide centered */}
       {items.length > 1 && (
-        <div className={`mt-3 ${thumbsClassName}`}>
+        <div
+          className={`mt-3 ${thumbsClassName}`}
+          data-thumbnail-carousel
+        >
           <Splide
             id={thumbId}
             ref={thumbsRef}

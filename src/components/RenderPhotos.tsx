@@ -1,5 +1,11 @@
+"use client";
+
 import { ImageWithCaption } from "@/components/ImageWithCaption";
 import { getStrapiMedia } from "@/utils/getStrapiMedia";
+import { PhotoProvider, PhotoView } from "react-photo-view";
+import "react-photo-view/dist/react-photo-view.css";
+
+const photoViewBeigeBackdrop = `.PhotoView-Slider__Backdrop { background: #e8e4dc !important; }`;
 
 export type PhotoGridItem = {
   url?: string;
@@ -91,30 +97,40 @@ export function RenderPhotos({
   const items = filterPhotos(list, nameContains);
 
   return (
-    <article className="mt-10">
-      {title != null && title !== "" && (
-        <h3 className="text-base font-bold uppercase tracking-[0.15em] text-[#2B4673] mb-2">
-          {title}
-        </h3>
-      )}
-      <div className="grid grid-cols-1 gap-4 mt-2 sm:gap-5  lg:gap-6">
-        {items.map((photo, idx) => (
-          <ImageWithCaption
-            key={photo.url ?? idx}
-            src={getStrapiMedia(photo.url!)}
-            alt={String(
+    <PhotoProvider loop={items.length} maskClosable pullClosable>
+      <style dangerouslySetInnerHTML={{ __html: photoViewBeigeBackdrop }} />
+      <article className="mt-10">
+        {title != null && title !== "" && (
+          <h3 className="text-base font-bold uppercase tracking-[0.15em] text-[#2B4673] mb-2">
+            {title}
+          </h3>
+        )}
+        <div className="grid grid-cols-1 gap-4 mt-2 sm:gap-5 lg:gap-6">
+          {items.map((photo, idx) => {
+            const src = getStrapiMedia(photo.url!);
+            const alt = String(
               photo.alt ??
                 photo.alternativeText ??
                 photo.name ??
                 `${altFallback} ${idx + 1}`,
-            )}
-            description={photo.caption ?? photo.description ?? ""}
-            width={width}
-            height={height}
-            figureClassName="border-[#2B4673]"
-          />
-        ))}
-      </div>
-    </article>
+            );
+            return (
+              <PhotoView key={photo.url ?? idx} src={src}>
+                <div className="cursor-pointer">
+                  <ImageWithCaption
+                    src={src}
+                    alt={alt}
+                    description={photo.caption ?? photo.description ?? ""}
+                    width={width}
+                    height={height}
+                    figureClassName="border-[#2B4673]"
+                  />
+                </div>
+              </PhotoView>
+            );
+          })}
+        </div>
+      </article>
+    </PhotoProvider>
   );
 }

@@ -77,7 +77,7 @@ export function TableOfContents({
             <Link
               key={pcode}
               href={href}
-              className="toc-card-link card group relative flex flex-col overflow-hidden rounded-lg border border-gray-600 bg-black/30 shadow-sm transition-shadow hover:shadow-md hover:border-zinc-100 hover:bg-black/20 border-solid focus:outline-none focus:ring-2 focus:ring-[#2B4673] focus:ring-offset-2"
+              className="toc-card-link card group relative flex flex-col overflow-hidden border border-gray-600/50 bg-black/20 shadow-sm transition-shadow hover:shadow-md hover:border-zinc-100 hover:bg-black/20 border-solid focus:outline-none focus:ring-2 focus:ring-[#2B4673] focus:ring-offset-2"
             >
               <div className="relative aspect-[16/10] w-full shrink-0 overflow-hidden">
                 <div className="absolute top-4 left-4 z-10">
@@ -86,7 +86,7 @@ export function TableOfContents({
                   </h2>
                 </div>
                 {thumbnailUrl ? (
-                  <div className="absolute inset-0 w-full h-full bg-zinc-900 flex items-center justify-center">
+                  <div className="absolute inset-0 w-full h-full bg-black/40 flex items-center justify-center">
                     <Image
                       src={thumbnailUrl}
                       alt=""

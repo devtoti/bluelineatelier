@@ -5,7 +5,7 @@ import Link from "next/link";
 export type ProjectNavigationItem = {
   id: string;
   name: string;
-  /** Optional href (e.g. 00 → /portfolio/toc, 07 → /portfolio/projects/07) */
+  /** Optional href (e.g. 00 → /portfolio/00, 07 → /portfolio/projects/07) */
   href?: string;
 };
 
@@ -48,28 +48,43 @@ export function ProjectNavigation({
     ? "pointer-events-none absolute left-full z-50 ml-2 whitespace-nowrap rounded-md border border-zinc-500 bg-[#0C1222] px-2.5 py-1.5 text-xs font-medium text-white shadow-lg shadow-black/30 invisible opacity-0 transition-opacity duration-150 delay-100 group-hover:visible group-hover:opacity-100"
     : "pointer-events-none absolute left-full z-50 ml-2 whitespace-nowrap rounded-md border border-[#2B4673]/20 bg-[#EDE7E3] px-2.5 py-1.5 text-xs font-medium text-[#2B4673] shadow-md invisible opacity-0 transition-opacity duration-150 delay-100 group-hover:visible group-hover:opacity-100";
 
+  const renderItem = (
+    id: string,
+    label: string,
+    tooltip: string,
+    href: string,
+    isActive: boolean,
+  ) => (
+    <div key={id} className="group relative flex ml-4 items-center">
+      <Link
+        href={href}
+        className={`${linkBase} ${isActive ? linkActive : linkInactive}`}
+        aria-current={isActive ? "page" : undefined}
+      >
+        {label}
+      </Link>
+      <span role="tooltip" className={tooltipClass}>
+        {tooltip}
+      </span>
+    </div>
+  );
+
   return (
     <nav
       aria-label="Project navigation"
       className={`project-navigation flex flex-col gap-1 ${className}`}
     >
+      {renderItem(
+        "cover",
+        "CR",
+        "Cover",
+        "/portfolio",
+        activeId === "cover" || activePcode === "cover",
+      )}
       {items.map(({ id, name, href }) => {
         const isActive = id === activePcode;
         const linkHref = href ?? `/portfolio/projects/${id}`;
-        return (
-          <div key={id} className="group relative flex ml-4 items-center">
-            <Link
-              href={linkHref}
-              className={`${linkBase} ${isActive ? linkActive : linkInactive}`}
-              aria-current={isActive ? "page" : undefined}
-            >
-              {id}
-            </Link>
-            <span role="tooltip" className={tooltipClass}>
-              {name}
-            </span>
-          </div>
-        );
+        return renderItem(id, id, name, linkHref, isActive);
       })}
     </nav>
   );

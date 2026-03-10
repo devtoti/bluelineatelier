@@ -16,27 +16,14 @@ export default async function TableOfContentsZeroPage() {
   }
 
   return (
-    <div
-      className="relative min-h-[100svh] font-sans overflow-hidden"
-      style={{ backgroundColor: "#0C1222" }}
-    >
-      <div className="portfolio-grain" aria-hidden />
-      <div className="portfolio-grid" aria-hidden />
+    <div className="back-cover relative min-h-[100svh] w-full font-sans overflow-hidden">
       <div className="relative z-10 mx-auto min-h-svh max-w-5xl px-6 py-12">
-        <div className="flex justify-between items-center mb-8">
-          <Link
-            href="/portfolio"
-            className="text-sm font-medium text-zinc-400 transition-colors hover:text-white"
-          >
-            ← Back to cover page
-          </Link>
-        </div>
         <h1
           className="font-heading text-3xl font-bold mb-2"
           style={{ color: "#53A4D7" }}
         >
           tableOfContents
-          <span style={{ color: "#BB2EB5" }}>()</span>
+          <span style={{ color: "#BB2EB5" }}>( )</span>
         </h1>
         <p className="text-zinc-300 text-sm mb-10">
           A collection of architectural, programming, and design projects. Click

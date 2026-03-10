@@ -58,3 +58,17 @@ export async function getProjectLayoutData(
     activeId: normalizedId,
   };
 }
+
+/**
+ * Fetch nav items for portfolio index (e.g. route 00 / toc).
+ * Used when showing ProjectNavigation on non-project portfolio routes.
+ */
+export async function getPortfolioNavItems(): Promise<ProjectNavItem[]> {
+  try {
+    const res = await getProjects();
+    const data = res.data ?? [];
+    return buildProjectNavItems(data);
+  } catch {
+    return [];
+  }
+}

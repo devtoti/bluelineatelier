@@ -16,7 +16,7 @@ export function buildProjectNavItems(
   data: StrapiProjectNode[],
 ): ProjectNavItem[] {
   const list: ProjectNavItem[] = [];
-  list.push({ id: "00", name: "Table of contents", href: "/portfolio/toc" });
+  list.push({ id: "00", name: "Table of contents", href: "/portfolio/00" });
   for (let i = 1; i <= 6; i++) {
     const code = i < 10 ? `0${i}` : String(i);
     const node = findProjectByPcode(data, [code]);

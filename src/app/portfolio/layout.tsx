@@ -5,5 +5,9 @@ export default function PortfolioLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return <PortfolioLayoutClient>{children}</PortfolioLayoutClient>;
+  return (
+    <div className="min-w-0 w-full max-w-full overflow-x-hidden">
+      <PortfolioLayoutClient>{children}</PortfolioLayoutClient>
+    </div>
+  );
 }
