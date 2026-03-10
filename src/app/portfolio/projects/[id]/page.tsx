@@ -12,7 +12,7 @@ import {
   type StrapiProjectNode,
 } from "@/lib/strapiProjects";
 
-const PROJECT_ORDER = ["00", "01", "02", "03", "04", "05", "06", "07"] as const;
+const PROJECT_ORDER = ["00", "01", "02", "03", "04", "05", "06"] as const;
 
 type ProjectPageProps = {
   params: Promise<{ id: string }>;
@@ -74,7 +74,7 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
   }
 
   if (normalizedId === "07") {
-    redirect("/portfolio/projects/07");
+    redirect("/portfolio/contact");
   }
 
   let data: StrapiProjectNode[] = [];
@@ -199,13 +199,13 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
   )?.[0] as Record<string, unknown> | undefined;
 
   return (
-    <article className="scrollable-article mx-auto max-w-4xl px-6 sm:px-8 pt-8 pb-12 relative">
-      <span className="bracket top-0 left-0 absolute w-5 h-5 border-t-2 border-l-2 border-blue-800 opacity-100"></span>
+    <article className="scrollable-article mt-10 mx-auto max-w-4xl sm:mt-0 sm:pt-10 px-4 md:px-6 sm:px-8 pb-12 relative bg-black/2 border-[1px] border-zinc-300 rounded-sm">
+      {/* <span className="bracket top-0 left-0 absolute w-5 h-5 border-t-2 border-l-2 border-blue-800 opacity-100"></span>
       <span className="bracket top-0 right-0 absolute w-5 h-5 border-t-2 border-r-2 border-blue-800 opacity-100"></span>
       <span className="bracket bottom-0 left-0 absolute w-5 h-5 border-b-2 border-l-2 border-blue-800 opacity-100"></span>
-      <span className="bracket bottom-0 right-0 absolute w-5 h-5 border-b-2 border-r-2 border-blue-800 opacity-100"></span>
+      <span className="bracket bottom-0 right-0 absolute w-5 h-5 border-b-2 border-r-2 border-blue-800 opacity-100"></span> */}
       {/* Masthead */}
-      <header className="border-b border-zinc-300 pb-6">
+      <header className="border-b border-zinc-300 ">
         <p className="text-xs font-semibold uppercase tracking-[0.3em] opacity-70">
           {normalizedId} • {String(proj.domain ?? "").toUpperCase()}
           {/* {getSectionLabel(String(proj.pcode ?? id))} */}
@@ -217,22 +217,6 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
           <p className="mt-2 mb-4 max-w-2xl text-sm leading-relaxed italic text-[#2B4673] opacity-75 sm:text-base">
             {String(proj.summary)}
           </p>
-        )}
-        {tagsList.length > 0 && (
-          <div className="mt-2">
-            <div className="flex flex-wrap gap-2">
-              {String(tagsRaw ?? "")
-                .split("\n")
-                .map((tag: string) => (
-                  <span
-                    key={tag}
-                    className="inline-flex items-center rounded-full border border-[#2B4673]/30 bg-gray-200  italic px-4 h-7 py-2 text-xs font-semibold text-[#2B4673] transition-colors"
-                  >
-                    {tag}
-                  </span>
-                ))}
-            </div>
-          </div>
         )}
       </header>
 
@@ -349,8 +333,8 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
             p.url.length > 0 &&
             p.name?.toLowerCase()?.includes("sketches"),
         ).length > 0 && (
-          <section className="mt-10">
-            <div className="grid gap-4 grid-cols-5 lg:grid-cols-3 mt-2">
+          <section className="sketches mt-10">
+            <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 mt-2">
               {(photos ?? [])
                 .filter(
                   (p) =>
@@ -453,7 +437,7 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
       {/* Key stages */}
       <section
         id="project-timeline"
-        className="mt-10 grid gap-8 border-t border-zinc-300 pt-6 text-xs sm:grid-cols-2"
+        className="mt-4 grid gap-8 border-t border-zinc-300 text-xs sm:grid-cols-2"
       >
         {keyStages && (
           <div>
@@ -481,6 +465,22 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
           </div>
         )}
       </section>
+      {tagsList.length > 0 && (
+        <div className="mt-2">
+          <div className="flex flex-wrap gap-1 md:gap-2">
+            {String(tagsRaw ?? "")
+              .split("\n")
+              .map((tag: string) => (
+                <span
+                  key={tag}
+                  className="inline-flex items-center rounded-full border border-[#2B4673]/30 bg-gray-200  italic px-2 md:px-4 h-6 md:h-8 py-2 text-[0.6rem] md:text-[0.7rem] font-semibold text-[#4c6c9e] transition-colors"
+                >
+                  {tag}
+                </span>
+              ))}
+          </div>
+        </div>
+      )}
     </article>
   );
 }

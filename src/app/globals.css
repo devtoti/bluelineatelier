@@ -36,6 +36,17 @@
   background-size: clamp(24px, 6vmin, 56px) clamp(24px, 6vmin, 56px);
 }
 
+/* Same squared grid for overlay (e.g. mobile menu); fills container */
+.portfolio-grid-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Cdefs%3E%3Cpattern id='g' width='100' height='100' patternUnits='userSpaceOnUse'%3E%3Cpath d='M 0 0 v 100' stroke='rgba(255,255,255,0.2)' stroke-width='1' stroke-dasharray='6 6' fill='none'/%3E%3Cpath d='M 0 0 h 100' stroke='rgba(255,255,255,0.2)' stroke-width='1' stroke-dasharray='6 6' fill='none'/%3E%3C/pattern%3E%3C/defs%3E%3Crect width='100' height='100' fill='url(%23g)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: clamp(24px, 6vmin, 56px) clamp(24px, 6vmin, 56px);
+}
+
 
 
 .blueprint-container {

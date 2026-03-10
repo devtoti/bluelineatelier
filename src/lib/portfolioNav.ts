@@ -29,6 +29,6 @@ export function buildProjectNavItems(
       : `Project ${code}`;
     list.push({ id: code, name });
   }
-  list.push({ id: "07", name: "Contact" });
+ 
   return list;
 }

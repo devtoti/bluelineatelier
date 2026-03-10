@@ -12,9 +12,22 @@ import "@splidejs/splide/dist/css/splide.min.css";
 /* Override react-photo-view fullscreen backdrop to beige */
 const photoViewBeigeBackdrop = `.PhotoView-Slider__Backdrop { background: #e8e4dc !important; }`;
 
-/* Thumbnail strip: no arrows; Splide focus "center" keeps active slide centered */
+/* Thumbnail strip: no arrows; Splide focus "center" keeps active slide centered
+   Main active image aspect ratio: 16:9 by default, 1:1 on mobile via .carousel-main-image */
 const thumbnailCarouselStyles = `
   [data-thumbnail-carousel] .splide__arrows { display: none !important; }
+`;
+
+/* Main image: 16:9 aspect on desktop, 1:1 (square) on screens <= 640px */
+const carouselMainImageStyles = `
+  .carousel-main-image {
+    aspect-ratio: 16 / 9;
+  }
+  @media (max-width: 640px) {
+    .carousel-main-image {
+      aspect-ratio: 1 / 1 !important;
+    }
+  }
 `;
 
 export type CarouselItem = {
@@ -27,8 +40,6 @@ export type CarouselItem = {
   /** Optional thumbnail URL (uses url if not set) */
   thumbUrl?: string;
 };
-
-const ASPECT_VIDEO = 16 / 9;
 
 export type ImageCarouselProps = {
   /** List of images; first item is shown initially */
@@ -45,10 +56,16 @@ export type ImageCarouselProps = {
 
 const mainOptions: Options = {
   type: "fade",
-  heightRatio: 0.5,
+  heightRatio: 9 / 16, // 16:9 from sm (640px) up
   pagination: false,
   arrows: false,
   cover: true,
+  breakpoints: {
+    // Square aspect only on viewports <= 640px
+    640: {
+      heightRatio: 1,
+    },
+  },
 };
 
 const thumbnailOptions: Options = {
@@ -75,7 +92,7 @@ const thumbnailOptions: Options = {
 };
 
 /**
- * ArchDaily-style image carousel: one main image (16:9) with Splide thumbnail
+ * ArchDaily-style image carousel: one main image (16:9 on desktop, 1:1 on mobile) with Splide thumbnail
  * navigation below. Main and thumbnails stay in sync. Accessible: ARIA, focus.
  */
 export function ImageCarousel({
@@ -111,6 +128,7 @@ export function ImageCarousel({
     <PhotoProvider loop={items.length} maskClosable pullClosable>
       <style dangerouslySetInnerHTML={{ __html: photoViewBeigeBackdrop }} />
       <style dangerouslySetInnerHTML={{ __html: thumbnailCarouselStyles }} />
+      <style dangerouslySetInnerHTML={{ __html: carouselMainImageStyles }} />
       <section
         id={regionId}
         data-carousel
@@ -119,7 +137,7 @@ export function ImageCarousel({
         aria-roledescription="carousel"
         aria-label="Project image gallery"
       >
-        {/* Main slider: fade, 16:9, no arrows/pagination; click opens react-photo-view */}
+        {/* Main slider: fade, 16:9 desktop / 1:1 mobile, no arrows/pagination; click opens react-photo-view */}
         <Splide
           id={mainId}
           ref={mainRef}
@@ -131,8 +149,7 @@ export function ImageCarousel({
             <SplideSlide key={`${item.url}-${index}`}>
               <PhotoView src={item.url}>
                 <div
-                  className="relative cursor-pointer overflow-hidden rounded-sm border border-zinc-300 bg-zinc-200/80 transition-opacity hover:opacity-95"
-                  style={{ aspectRatio: ASPECT_VIDEO }}
+                  className="carousel-main-image relative cursor-pointer overflow-hidden rounded-sm border border-zinc-300 bg-zinc-200/80 transition-opacity hover:opacity-95"
                   role="button"
                   tabIndex={0}
                   aria-label={`View full size: ${item.alt}`}

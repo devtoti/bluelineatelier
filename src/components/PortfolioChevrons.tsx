@@ -11,16 +11,7 @@ const PORTFOLIO_SEQUENCE: {
   prev: string | null;
 }[] = [
   { path: "/portfolio", next: "/portfolio/00", prev: null },
-  {
-    path: "/portfolio/00",
-    next: "/portfolio/projects/01",
-    prev: "/portfolio",
-  },
-  {
-    path: "/portfolio/00",
-    next: "/portfolio/projects/01",
-    prev: "/portfolio",
-  },
+  { path: "/portfolio/00", next: "/portfolio/projects/01", prev: "/portfolio" },
   {
     path: "/portfolio/projects/01",
     next: "/portfolio/projects/02",
@@ -48,11 +39,11 @@ const PORTFOLIO_SEQUENCE: {
   },
   {
     path: "/portfolio/projects/06",
-    next: "/portfolio/projects/07",
+    next: "/portfolio/contact",
     prev: "/portfolio/projects/05",
   },
   {
-    path: "/portfolio/projects/07",
+    path: "/portfolio/contact",
     next: null,
     prev: "/portfolio/projects/06",
   },
@@ -68,7 +59,7 @@ function getPrevNext(pathname: string): {
   // Handle dynamic [id] that might not be in list (e.g. 00)
   if (normalized.startsWith("/portfolio/projects/")) {
     const id = normalized.replace("/portfolio/projects/", "");
-    const order = ["01", "02", "03", "04", "05", "06", "07"];
+    const order = ["01", "02", "03", "04", "05", "06"];
     const i = order.indexOf(id);
     if (i > 0)
       return {
@@ -91,12 +82,12 @@ function getPrevNext(pathname: string): {
 }
 
 // Color for chevrons on covers (not project pages)
-const coverChevronColor = "#C53135";
+const coverChevronColor = "#a1a1aa"; // zinc-400 in Tailwind (hex)
 const projectPageChevronColor = "#2B4673";
 
 // Project page: /portfolio/projects/XX, cover pages: /portfolio, /portfolio/00
 function isProjectPage(pathname: string | null): boolean {
-  return !!pathname && /^\/portfolio\/projects\/(01|02|03|04|05|06|07)$/.test(pathname);
+  return !!pathname && /^\/portfolio\/projects\/(01|02|03|04|05|06)$/.test(pathname);
 }
 function isPortfolio(pathname: string | null): boolean {
   return pathname === "/portfolio" || pathname?.startsWith("/portfolio/");

@@ -43,9 +43,25 @@ export function TableOfContents({
   projects,
   className = "",
 }: TableOfContentsProps) {
-  const items: StrapiProjectNode[] = Array.isArray(projects?.data)
-    ? projects.data
-    : [];
+  // Put all projects in "itemsByPcode", mapping pcode -> project
+  const itemsByPcode: Record<string, StrapiProjectNode> = {};
+  if (Array.isArray(projects?.data)) {
+    for (const project of projects.data) {
+      const attrs = project.attributes ?? (project as Record<string, unknown>);
+      // Guarantee two-digit string for pcode, fallback to id if missing
+      const rawPcode = attrs?.pcode ?? attrs?.code ?? project.id;
+      const pcode = toTwoDigitPcode(rawPcode);
+      if (["01", "02", "03", "04", "05", "06"].includes(pcode)) {
+        itemsByPcode[pcode] = project;
+      }
+    }
+  }
+
+  // Always order by explicit "01"-"06"
+  const orderedPcodes = ["01", "02", "03", "04", "05", "06"];
+  const items: StrapiProjectNode[] = orderedPcodes
+    .map((pcode) => itemsByPcode[pcode])
+    .filter(Boolean);
 
   return (
     <>
@@ -77,7 +93,7 @@ export function TableOfContents({
             <Link
               key={pcode}
               href={href}
-              className="toc-card-link card group relative flex flex-col overflow-hidden border border-gray-600/50 bg-black/20 shadow-sm transition-shadow hover:shadow-md hover:border-zinc-100 hover:bg-black/20 border-solid focus:outline-none focus:ring-2 focus:ring-[#2B4673] focus:ring-offset-2"
+              className="toc-card-link card group relative flex flex-col overflow-hidden border border-gray-600/50 bg-black/20 shadow-sm transition-shadow hover:shadow-md hover:border-zinc-100 hover:bg-black/10 border-solid focus:outline-none focus:ring-2 focus:ring-[#2B4673] focus:ring-offset-2"
             >
               <div className="relative aspect-[16/10] w-full shrink-0 overflow-hidden">
                 <div className="absolute top-4 left-4 z-10">
@@ -86,7 +102,7 @@ export function TableOfContents({
                   </h2>
                 </div>
                 {thumbnailUrl ? (
-                  <div className="absolute inset-0 w-full h-full bg-black/40 flex items-center justify-center">
+                  <div className="absolute inset-0 w-full h-full bg-white/5 flex items-center justify-center">
                     <Image
                       src={thumbnailUrl}
                       alt=""
@@ -109,11 +125,11 @@ export function TableOfContents({
                   {name}
                 </h3>
                 {summary ? (
-                  <p className="mt-2 line-clamp-3 flex-1 text-sm text-zinc-500">
+                  <p className="mt-2 line-clamp-3 flex-1 truncate h-32 text-sm text-zinc-500">
                     {summary}
                   </p>
                 ) : null}
-                <p className="mt-3 text-xs font-medium uppercase tracking-widest text-zinc-500 opacity-80">
+                <p className="mt-3 text-xs font-medium uppercase tracking-widest text-[#53A4D7] opacity-80">
                   View project →
                 </p>
               </div>

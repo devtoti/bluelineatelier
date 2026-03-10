@@ -53,7 +53,8 @@ export function PageContent({
         setActiveId(PROJECT_INFO_ID);
         return;
       }
-      const atBottom = scrollTop + clientHeight >= scrollHeight - SCROLL_TOP_THRESHOLD;
+      const atBottom =
+        scrollTop + clientHeight >= scrollHeight - SCROLL_TOP_THRESHOLD;
       if (atBottom && sections.length > 0) {
         const lastId = sections[sections.length - 1]?.id ?? null;
         if (lastId) setActiveId(lastId);
@@ -126,7 +127,7 @@ export function PageContent({
   return (
     <nav
       aria-label="On this page"
-      className={`page-content w-52 mt-16 shrink-0 ${className}`}
+      className={`-translate-x-1/3 page-content w-52 mt-16 shrink-0 ${className}`}
     >
       <p className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-[#2B4673] opacity-80">
         {title}
