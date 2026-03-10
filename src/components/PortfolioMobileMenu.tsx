@@ -63,7 +63,9 @@ export function PortfolioMobileMenu({
   return (
     <>
       {/* Mobile top navbar */}
-      <div className="fixed top-0 inset-x-0 z-40 flex items-center justify-between px-4 pt-3 md:hidden">
+      <div className="top-navbar-mboile bg-white fixed top-0 inset-x-0 z-40 flex items-center justify-between px-4 py-2 md:hidden">
+        <div className="portfolio-grain-light" aria-hidden />
+        <div className="portfolio-grid-light" aria-hidden />
         <button
           type="button"
           onClick={onOpen}

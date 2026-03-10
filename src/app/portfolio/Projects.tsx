@@ -1,5 +1,8 @@
 import Link from "next/link";
-import type { StrapiProjectsResponse } from "@/lib/strapiProjects";
+import type {
+  StrapiProjectsResponse,
+  StrapiProjectNode,
+} from "@/lib/strapiProjects";
 
 function toTwoDigitPcode(value: string | number | undefined): string {
   if (value == null) return "00";
@@ -12,7 +15,9 @@ export default function Projects({
 }: {
   projects: StrapiProjectsResponse;
 }) {
-  const items: unknown[] = Array.isArray(projects?.data) ? projects.data : [];
+  const items: StrapiProjectNode[] = Array.isArray(projects?.data)
+    ? projects.data
+    : [];
 
   return (
     <section aria-label="Projects" className="w-full text-left">
@@ -20,9 +25,18 @@ export default function Projects({
         Selected Projects
       </h2>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {items.slice(0, 6).map((project: any) => {
-          const attrs = project.attributes ?? project;
-          const pcode = toTwoDigitPcode(attrs.pcode ?? attrs.code ?? project.id);
+        {items.slice(0, 6).map((project) => {
+          const attrs = project.attributes ?? (project as Record<string, unknown>);
+          const rawPcode = attrs.pcode ?? attrs.code ?? project.id;
+          const pcode = toTwoDigitPcode(
+            typeof rawPcode === "string" || typeof rawPcode === "number"
+              ? rawPcode
+              : undefined,
+          );
+          const name =
+            String(attrs.name ?? attrs.title ?? `Project ${pcode}`).trim() ||
+            `Project ${pcode}`;
+          const description = String(attrs.description ?? "").trim();
 
           return (
             <Link
@@ -31,10 +45,10 @@ export default function Projects({
               className="group block rounded-lg border border-zinc-800 bg-black/40 p-4 text-left transition-colors hover:border-zinc-500"
             >
               <h3 className="font-heading mb-1 text-base font-semibold text-white group-hover:text-blue-300">
-                {attrs.name ?? attrs.title ?? `Project ${attrs.pcode ?? project.id}`}
+                {name}
               </h3>
               <p className="line-clamp-3 text-sm text-zinc-400">
-                {attrs.description ?? ""}
+                {description}
               </p>
               <p className="mt-3 text-xs uppercase tracking-[0.2em] text-zinc-500">
                 View project →

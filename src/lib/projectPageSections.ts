@@ -38,7 +38,7 @@ export function buildPageSections(proj: Record<string, unknown>): PageContentIte
     },
     hasContent(overview?.approach) && { id: "approach", label: "Approach" },
     hasContent(overview?.results) && { id: "results", label: "Results" },
-    keyStages && { id: "project-timeline", label: "Project timeline" },
+    keyStages ? { id: "project-timeline", label: "Project timeline" } : false,
   ];
   return sections.filter((s): s is PageContentItem => Boolean(s));
 }

@@ -1,4 +1,3 @@
-import Link from "next/link";
 import type { ReactNode } from "react";
 import "../../../../projects.css";
 import { notFound, redirect } from "next/navigation";
@@ -11,8 +10,6 @@ import {
   findProjectByPcode,
   type StrapiProjectNode,
 } from "@/lib/strapiProjects";
-
-const PROJECT_ORDER = ["00", "01", "02", "03", "04", "05", "06"] as const;
 
 type ProjectPageProps = {
   params: Promise<{ id: string }>;
@@ -157,18 +154,6 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
       };
     });
 
-  const index = PROJECT_ORDER.indexOf(
-    normalizedId as (typeof PROJECT_ORDER)[number],
-  );
-  const prevCode = index > 0 ? PROJECT_ORDER[index - 1] : null;
-  const nextCode =
-    index >= 0 && index < PROJECT_ORDER.length - 1
-      ? PROJECT_ORDER[index + 1]
-      : null;
-
-  function getSectionLabel(pcode: string): string {
-    return pcode ? `Project ${pcode}` : "Project";
-  }
   const tagsRaw = proj.tags;
   const tagsList: string[] = Array.isArray(tagsRaw)
     ? tagsRaw
@@ -199,7 +184,7 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
   )?.[0] as Record<string, unknown> | undefined;
 
   return (
-    <article className="scrollable-article mt-10 mx-auto max-w-4xl sm:mt-0 sm:pt-10 px-4 md:px-6 sm:px-8 pb-12 relative bg-black/2 border-[1px] border-zinc-300 rounded-sm">
+    <article className="scrollable-article mt-10 mx-auto max-w-4xl sm:mt-0 sm:pt-10 pt-4 px-4 md:px-6 sm:px-8 pb-12 relative bg-black/2 border-[1px] border-zinc-300 rounded-sm">
       {/* <span className="bracket top-0 left-0 absolute w-5 h-5 border-t-2 border-l-2 border-blue-800 opacity-100"></span>
       <span className="bracket top-0 right-0 absolute w-5 h-5 border-t-2 border-r-2 border-blue-800 opacity-100"></span>
       <span className="bracket bottom-0 left-0 absolute w-5 h-5 border-b-2 border-l-2 border-blue-800 opacity-100"></span>

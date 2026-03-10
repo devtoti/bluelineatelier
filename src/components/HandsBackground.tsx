@@ -5,11 +5,7 @@ const SECONDARY = "#52525b"; // zinc-600
 const HAND_IMAGE =
   "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAFAAAAAYCAYAAABtGnqsAAAACXBIWXMAABYlAAAWJQFJUiTwAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAEkSURBVHgB1da9DcIwGIRh2yyQFWioWSEj0DBKhkjDHjSMkBWoaVghA0ACjrhIUX5sYozvexuQYp2ip4m1+qLT5b5/PJuqVW3mOquVrtuNyYvD9qo889ivVdPkxXHnvVm+N7XnO6/Z174HCfAQFaIXIBEeokF0AhLiIQrERUBiPJQccRZQAB5KijgJKAgPJUMcATLh2X37G+sK8gvEASAbnt3v/ke8x4Ui9oCMeNiPfRkO2e8AmfEQK6KWgIcYEY0UPJt9Zs/g4+IoU8ZU5fm2V56t2TdS8BAbonGdYMJDTIiLgIx4iAVxFpAZDzEgTgJKwEOpEUeAkvBQSsQBoEQ8lAqxB2TEs/ux73Gh+x0gK57d/8dlOGTfMON99jNmREOOh2gRXxJFUpzgFetbAAAAAElFTkSuQmCC";
 
-export default function HandsBackground({
-  isDark = false,
-}: {
-  isDark?: boolean;
-}) {
+export default function HandsBackground() {
   // Set opacity of hatch images to 0.2 (20%)
   const imageOpacity = 0.2;
 

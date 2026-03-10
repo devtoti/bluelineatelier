@@ -90,7 +90,7 @@ function isProjectPage(pathname: string | null): boolean {
   return !!pathname && /^\/portfolio\/projects\/(01|02|03|04|05|06)$/.test(pathname);
 }
 function isPortfolio(pathname: string | null): boolean {
-  return pathname === "/portfolio" || pathname?.startsWith("/portfolio/");
+  return !!(pathname === "/portfolio" || pathname?.startsWith("/portfolio/"));
 }
 
 // Tailwind-based classes are otherwise unchanged; color is overridden by inline style if needed.

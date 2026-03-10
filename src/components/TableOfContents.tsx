@@ -50,7 +50,11 @@ export function TableOfContents({
       const attrs = project.attributes ?? (project as Record<string, unknown>);
       // Guarantee two-digit string for pcode, fallback to id if missing
       const rawPcode = attrs?.pcode ?? attrs?.code ?? project.id;
-      const pcode = toTwoDigitPcode(rawPcode);
+      const pcode = toTwoDigitPcode(
+        typeof rawPcode === "string" || typeof rawPcode === "number"
+          ? rawPcode
+          : undefined,
+      );
       if (["01", "02", "03", "04", "05", "06"].includes(pcode)) {
         itemsByPcode[pcode] = project;
       }
@@ -78,8 +82,11 @@ export function TableOfContents({
         {items.map((project) => {
           const attrs =
             project.attributes ?? (project as Record<string, unknown>);
+          const rawPcode = attrs?.pcode ?? attrs?.code ?? project.id;
           const pcode = toTwoDigitPcode(
-            attrs?.pcode ?? attrs?.code ?? project.id,
+            typeof rawPcode === "string" || typeof rawPcode === "number"
+              ? rawPcode
+              : undefined,
           );
           const name =
             String(attrs?.name ?? attrs?.title ?? `Project ${pcode}`).trim() ||
