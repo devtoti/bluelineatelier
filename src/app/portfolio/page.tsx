@@ -4,6 +4,8 @@ import CountdownTimer from "./CountdownTimer";
 import { Suspense } from "react";
 import Projects from "./Projects";
 import { getProjects, type StrapiProjectsResponse } from "@/lib/strapiProjects";
+import { buildProjectNavItems } from "@/lib/portfolioNav";
+import { ProjectNavigation } from "@/components/ProjectNavigation";
 
 const emptyProjects: StrapiProjectsResponse = { data: [] };
 
@@ -14,6 +16,8 @@ export default async function Portfolio() {
   } catch (err) {
     console.error("Strapi fetch failed:", err);
   }
+  const projectNavItems = buildProjectNavItems(projectsData.data ?? []);
+
   return (
     <div
       className="relative min-h-[100svh] font-sans overflow-hidden"
@@ -21,6 +25,17 @@ export default async function Portfolio() {
     >
       <div className="portfolio-grain" aria-hidden />
       <div className="portfolio-grid" aria-hidden />
+      <div className="fixed bottom-6 left-6 z-20 hidden lg:block">
+        <div className="flex justify-between items-center mb-8">
+          <Link
+            href="/"
+            className="text-sm font-medium text-zinc-400 transition-colors hover:text-white"
+          >
+            ← Back home
+          </Link>
+        </div>
+        <ProjectNavigation items={projectNavItems} activeId="cover" darkBg />
+      </div>
       <div className="relative z-10 mx-auto min-h-svh h-full max-w-4xl text-center px-6 py-16">
         <div className="flex justify-start pl-4">
           <Link

@@ -62,33 +62,33 @@
 /* Top (horizontal, overflows left and right) */
 .blueprint-container span.deco:nth-child(1) {
   top: 0;
-  right: -100%;
-  width: 200vw;
+  right: -200%;
+  width: 400vw;
   height: 1px;
 }
 
 /* Bottom (horizontal, overflows left and right) */
 .blueprint-container span.deco:nth-child(2) {
   bottom: 0;
-  left:-100%;
-  width: 200vw;
+  left:-200%;
+  width: 400vw;
   height: 1px;
 }
 
 /* Left (vertical, overflows top and bottom) */
 .blueprint-container span.deco:nth-child(3) {
   left: 0;
-  top: -100%;
+  top: -200%;
   width: 1px;
-  height: 200vh;
+  height: 400vh;
 }
 
 /* Right (vertical, overflows top and bottom) */
 .blueprint-container span.deco:nth-child(4) {
   right: 0;
-  top: -100%;
+  top: -200%;
   width: 1px;
-  height: 200vh;
+  height: 400vh;
 }
 
 /* The ::after may not be visible if .blueprint-container has no explicit width/height, is transparent, is overflow-hidden, or is covered by z-indexed children. Ensure .blueprint-container has enough size and background for visibility. Also, since the container uses padding and flex, absolute pseudo needs a non-static position (already set), but if the parent has no explicit min-height/width it may "collapse".
