@@ -18,26 +18,6 @@ export function DetailsAccordion({
 }: DetailsAccordionProps) {
   const [open, setOpen] = useState(defaultOpen);
 
-  const trigger = (
-    <button
-      type="button"
-      onClick={() => setOpen((prev) => !prev)}
-      className="ml-auto flex items-center text-[#2B4673] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2B4673] focus-visible:ring-offset-2 rounded shrink-0"
-      aria-expanded={open}
-      aria-controls="details-accordion-content"
-      id="details-accordion-trigger"
-      aria-label={open ? "Collapse details" : "Expand details"}
-    >
-      <span className="shrink-0" aria-hidden>
-        {open ? (
-          <FiChevronUp className="w-5 h-5" />
-        ) : (
-          <FiChevronDown className="w-5 h-5" />
-        )}
-      </span>
-    </button>
-  );
-
   const headerTitle =
     titleSlot ??
     (title != null ? (
@@ -48,10 +28,24 @@ export function DetailsAccordion({
 
   return (
     <div className="details-content overview mt-2 rounded">
-      {headerTitle}
-      <div className="flex py-4 px-2 flex-row items-center gap-0 ml-auto bg-black/5 justify-between flex-wrap">
-        {trigger}
-      </div>
+      <button
+        type="button"
+        onClick={() => setOpen((prev) => !prev)}
+        className="flex w-full py-4 px-2 flex-row items-center gap-0 ml-auto bg-black/5 justify-between flex-wrap text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2B4673] focus-visible:ring-offset-2 rounded text-[#2B4673]"
+        aria-expanded={open}
+        aria-controls="details-accordion-content"
+        id="details-accordion-trigger"
+        aria-label={open ? "Collapse details" : "Expand details"}
+      >
+        {headerTitle}
+        <span className="shrink-0" aria-hidden>
+          {open ? (
+            <FiChevronUp className="w-5 h-5" />
+          ) : (
+            <FiChevronDown className="w-5 h-5" />
+          )}
+        </span>
+      </button>
       <div
         id="details-accordion-content"
         role="region"
