@@ -146,7 +146,6 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
   };
   const photos = proj.photos as PhotoItem[] | undefined;
   const projectName = String(proj.name ?? "Project image");
-  console.log(proj);
   const CAROUSEL_PRIORITY: [string, number][] = [
     ["cover", 0],
     ["render", 1],
@@ -199,7 +198,6 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
   const interventionData = Array.isArray(proj.intervention)
     ? (proj.intervention as Record<string, unknown>[])[0]
     : undefined;
-  // Collaborators: prefer collab (newline-separated string), else collabs or legacy collaborators.data
   const collabStr =
     typeof interventionData?.collab === "string"
       ? (interventionData.collab as string).trim()
@@ -233,15 +231,9 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
 
   return (
     <article className="scrollable-article mt-10 mx-auto max-w-2xl lg:max-w-4xl sm:mt-0 sm:pt-10 pt-4 px-4 md:px-6 sm:px-8 pb-12 relative bg-black/2 border-[1px] border-zinc-300 rounded-sm">
-      {/* <span className="bracket top-0 left-0 absolute w-5 h-5 border-t-2 border-l-2 border-blue-800 opacity-100"></span>
-      <span className="bracket top-0 right-0 absolute w-5 h-5 border-t-2 border-r-2 border-blue-800 opacity-100"></span>
-      <span className="bracket bottom-0 left-0 absolute w-5 h-5 border-b-2 border-l-2 border-blue-800 opacity-100"></span>
-      <span className="bracket bottom-0 right-0 absolute w-5 h-5 border-b-2 border-r-2 border-blue-800 opacity-100"></span> */}
-      {/* Masthead */}
       <header className="border-b border-zinc-300 ">
         <p className="text-xs font-semibold uppercase tracking-[0.3em] opacity-70">
           {normalizedId} • {String(proj.domain ?? "").toUpperCase()}
-          {/* {getSectionLabel(String(proj.pcode ?? id))} */}
         </p>
         <h1 className="mt-3 font-heading text-2xl font-bold tracking-tight sm:text-3xl">
           {String(proj.name ?? "")}
@@ -253,7 +245,6 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
         )}
       </header>
 
-      {/* Hero image carousel / Gallery */}
       {carouselItems.length > 0 && (
         <section id="gallery" className="mt-8">
           <ImageCarousel
@@ -264,7 +255,6 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
           />
         </section>
       )}
-      {/* Meta grid (accordion): EntryText title outside accordion, section id="details" */}
       {proj.domain === "architecture" && (
         <section id="details">
           <DetailsAccordion titleSlot={<EntryText title="Details" text="" />}>
@@ -345,7 +335,6 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
           </DetailsAccordion>
         </section>
       )}
-      {/* Project description section */}
       <section id="overview" className="mt-10">
         <When
           ok={hasContent(proj.description) && hasContent(overview?.context)}
@@ -356,7 +345,6 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
         </When>
       </section>
 
-      {/* Narrative sections */}
       <section className="mt-10 space-y-8 text-sm leading-relaxed sm:text-base">
         <ShowWhenText value={overview?.challenges}>
           {(text) => (
@@ -430,12 +418,6 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
           title="Floor Plans"
           altFallback="Floor Plan Drawing"
         />
-        {/* <RenderPhotos
-              photos={photos}
-              nameContains="unit"
-              title="Units"
-              altFallback="Unit Drawing"
-            /> */}
         <RenderPhotos
           photos={photos}
           nameContains="elevation"
@@ -493,7 +475,6 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
         </When>
       </section>
 
-      {/* Key stages */}
       <section
         id="project-timeline"
         className="mt-4 grid gap-8 border-t border-zinc-300 text-xs sm:grid-cols-2"

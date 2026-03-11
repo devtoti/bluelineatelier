@@ -4,12 +4,9 @@ import { useState, type ReactNode } from "react";
 import { FiChevronDown, FiChevronUp } from "react-icons/fi";
 
 type DetailsAccordionProps = {
-  /** When omitted, only the chevron is shown in the trigger (use titleSlot for custom title outside) */
   title?: string;
-  /** Optional: render custom title in the header row (e.g. EntryText); when set, title is ignored */
   titleSlot?: ReactNode;
   children: ReactNode;
-  /** Optional: start expanded */
   defaultOpen?: boolean;
 };
 

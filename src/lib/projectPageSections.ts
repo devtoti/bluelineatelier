@@ -4,9 +4,6 @@ function hasContent(value: unknown): boolean {
   return value != null && String(value).trim() !== "";
 }
 
-/**
- * Build "On this page" sections from project attributes (shared by page and layout).
- */
 export function buildPageSections(proj: Record<string, unknown>): PageContentItem[] {
   const overview = (
     proj.overview as Record<string, unknown>[] | undefined

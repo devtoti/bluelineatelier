@@ -1,7 +1,6 @@
 import { getProjects, type StrapiProjectsResponse } from "@/lib/strapiProjects";
 import { TableOfContents } from "@/components/TableOfContents";
 
-// Prevent static caching so refresh always gets fresh data (helps in dev)
 export const dynamic = "force-dynamic";
 
 const emptyProjects: StrapiProjectsResponse = { data: [] };

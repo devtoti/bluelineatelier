@@ -9,9 +9,6 @@ export type ProjectNavItem = {
   href?: string;
 };
 
-/**
- * Build nav items for project sidebar (00 = toc, 01–06 = projects, 07 = contact).
- */
 export function buildProjectNavItems(
   data: StrapiProjectNode[],
 ): ProjectNavItem[] {
@@ -29,6 +26,5 @@ export function buildProjectNavItems(
       : `Project ${code}`;
     list.push({ id: code, name });
   }
- 
   return list;
 }

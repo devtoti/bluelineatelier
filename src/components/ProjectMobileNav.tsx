@@ -20,7 +20,6 @@ const SEQUENCE: { href: string; label: string }[] = [
 ];
 
 type ProjectMobileNavProps = {
-  /** Current project code, e.g. "01" or "02". Normalized to two digits. */
   currentProjectCode: string;
 };
 

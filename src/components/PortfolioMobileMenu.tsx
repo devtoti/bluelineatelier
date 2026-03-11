@@ -62,7 +62,6 @@ export function PortfolioMobileMenu({
 
   return (
     <>
-      {/* Mobile top navbar */}
       <div
         className={
           `top-navbar-mboile fixed top-0 inset-x-0 z-40 flex items-center shadow-sm justify-between px-4 py-2 lg:hidden ` +
@@ -89,7 +88,6 @@ export function PortfolioMobileMenu({
         </a>
       </div>
 
-      {/* Mobile menu overlay: cover-style dark blue + squared grid */}
       {isOpen && (
         <div className="fixed inset-0 z-50 bg-[#0C1222] bg-black/50 lg:hidden">
           <div className="portfolio-grid-overlay" aria-hidden />

@@ -20,10 +20,6 @@ export type ProjectLayoutData = {
   activeId: string;
 };
 
-/**
- * Fetch layout data for a project page (nav items, "On this page" sections, active id).
- * Used by the portfolio layout when rendering project pages.
- */
 export async function getProjectLayoutData(
   id: string,
 ): Promise<ProjectLayoutData | null> {
@@ -59,10 +55,6 @@ export async function getProjectLayoutData(
   };
 }
 
-/**
- * Fetch nav items for portfolio index (e.g. route 00 / toc).
- * Used when showing ProjectNavigation on non-project portfolio routes.
- */
 export async function getPortfolioNavItems(): Promise<ProjectNavItem[]> {
   try {
     const res = await getProjects();

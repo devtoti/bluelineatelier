@@ -6,17 +6,6 @@ export default async function Portfolio() {
     <div className="front-cover relative min-h-[100svh] w-full min-w-0 max-w-full font-sans overflow-x-hidden">
       <div className="relative text-zinc-300 z-10 sm:px-0 md:px-8 md:py-12 flex flex-col items-start justify-center min-h-svh">
         <div className="headings w-full md:max-w-85 group p-6 hover:bg-black/10 relative flex flex-col items-start justify-between">
-          {/* <span
-            className="sm:hidden pointer-events-none absolute right-0 top-1/2 translate-y-[-50%] h-0.5 w-[200vw] hidden group-hover:block"
-            style={{
-              left: "100%",
-              right: "auto",
-              width: "calc(200vw + 4rem)",
-              borderTop: "1px dashed #d63c41",
-              zIndex: 20,
-            }}
-            aria-hidden="true"
-          ></span> */}
           <span className="bracket top-0 left-0 absolute w-4 h-4 border-t-[1px] border-l-[1px] border-white/50 opacity-0 transition-colors duration-400 group-hover:border-white/50 group-hover:opacity-100"></span>
           <span className="bracket top-0 right-0 absolute w-4 h-4 border-t-[1px] border-r-[1px] border-white/50 opacity-0 transition-colors duration-400 group-hover:border-white/50 group-hover:opacity-100"></span>
           <span className="bracket bottom-0 left-0 absolute w-4 h-4 border-b-[1px] border-l-[1px] border-white/50 opacity-0 transition-colors duration-400 group-hover:border-white/50 group-hover:opacity-100"></span>
@@ -116,10 +105,8 @@ export default async function Portfolio() {
         dangerouslySetInnerHTML={{
           __html: `
           (function () {
-            // Target the span that holds the typed text (cursor "|" is a sibling after it in the DOM)
             var el = document.querySelector('[data-typewriter-text]');
             if (!el) return;
-
             var phrases = [
               "arkitekturportefølje",
               "computation i arkitektur",
@@ -128,14 +115,11 @@ export default async function Portfolio() {
               "portafolio de arquitectura",
               "computación en arquitectura"
             ];
-            var index = 0;   // which phrase we're on
-            var text = "";   // current substring shown (grows then shrinks)
+            var index = 0;
+            var text = "";
             var isDeleting = false;
-
             function tick() {
               var current = phrases[index];
-
-              // Just finished typing: wait a moment then start deleting
               if (!isDeleting && text === current) {
                 setTimeout(function () {
                   isDeleting = true;
@@ -143,22 +127,16 @@ export default async function Portfolio() {
                 }, 900);
                 return;
               }
-
-              // Just finished deleting: move to next phrase and start typing again
               if (isDeleting && text === "") {
                 isDeleting = false;
                 index = (index + 1) % phrases.length;
               }
-
-              // Add or remove one character
               text = isDeleting
                 ? current.slice(0, text.length - 1)
                 : current.slice(0, text.length + 1);
-
               el.textContent = text;
               setTimeout(tick, isDeleting ? 60 : 100);
             }
-
             tick();
           })();
         `,

@@ -5,25 +5,16 @@ import Link from "next/link";
 export type ProjectNavigationItem = {
   id: string;
   name: string;
-  /** Optional href (e.g. 00 → /portfolio/00, 07/CT → /portfolio/contact) */
   href?: string;
 };
 
 export type ProjectNavigationProps = {
-  /** Ordered list of projects (e.g. 00, 01, …, 07) with names for tooltips */
   items: ProjectNavigationItem[];
-  /** Current project id (e.g. "02") for active styling */
   activeId: string;
-  /** Use high-contrast styling for dark backgrounds (e.g. #0C1222) */
   darkBg?: boolean;
-  /** Optional class for the container */
   className?: string;
 };
 
-/**
- * Vertical project index nav (e.g. 00–07). Placed bottom-left.
- * Active project is styled; hover shows a right-side tooltip with project name.
- */
 export function ProjectNavigation({
   items,
   activeId,

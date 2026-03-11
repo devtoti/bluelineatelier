@@ -73,7 +73,6 @@ export function PortfolioLayoutClient({
 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  // Close mobile menu when pathname changes (defer to avoid synchronous setState in effect)
   useEffect(() => {
     const t = setTimeout(() => setIsMobileMenuOpen(false), 0);
     return () => clearTimeout(t);
@@ -84,8 +83,6 @@ export function PortfolioLayoutClient({
     pathname === "/portfolio/00" ||
     pathname === "/portfolio/contact";
 
-  // Show light project layout as soon as we're on a project route so the bg never flashes dark.
-  // Sidebars use layoutData when available; until then they get empty data to avoid layout shift.
   if (isProjectPage) {
     const navItems = layoutData?.projectNavItems ?? [];
     const pageSections = layoutData?.pageSections ?? [];
@@ -125,7 +122,6 @@ export function PortfolioLayoutClient({
               </div>
             </aside>
 
-            {/* Desktop chevrons only; removed on mobile */}
             <div className="row-start-2 col-start-1 col-end-2 row-end-3 min-h-0 hidden md:flex items-center justify-center">
               <PortfolioChevronLeft />
             </div>
@@ -177,7 +173,6 @@ export function PortfolioLayoutClient({
       >
         <div className="portfolio-grain" aria-hidden />
         <div className="portfolio-grid" aria-hidden />
-        {/* Left column: chevron + ProjectNavigation on /portfolio/00 (desktop only) */}
         <div className="hidden md:flex row-start-1 row-end-4 min-w-0 flex-col">
           <div className="flex-1 min-h-0 flex items-center justify-center">
             <div className="sticky top-1/2 -translate-y-1/2 flex items-center">
@@ -193,11 +188,9 @@ export function PortfolioLayoutClient({
             </div>
           )}
         </div>
-        {/* Main content spans all rows on mobile; middle column on desktop */}
         <div className="center-col relative min-h-0 min-w-0 overflow-x-hidden col-start-1 col-end-2 md:col-start-2 md:col-end-3 row-start-1 row-end-4">
           {children}
         </div>
-        {/* Right chevron, vertically centered (desktop only) */}
         <div className="hidden md:flex row-start-2 row-end-3 justify-center">
           <div className="sticky top-1/2 -translate-y-1/2 flex items-center">
             <PortfolioChevronRight />

@@ -12,11 +12,8 @@ export type PageContentItem = {
 };
 
 export type PageContentProps = {
-  /** List of sections to show in the "On this page" nav */
   sections: PageContentItem[];
-  /** Optional title above the links (default: "On this page") */
   title?: string;
-  /** Optional class for the container */
   className?: string;
 };
 
@@ -26,11 +23,6 @@ function getScrollContainer(): HTMLElement | null {
   ) as HTMLElement | null;
 }
 
-/**
- * "On this page" navigation component (Tailwind docs style).
- * Renders a sticky list of anchor links to page sections and optionally
- * highlights the active section on scroll.
- */
 export function PageContent({
   sections,
   title = "On this page",
