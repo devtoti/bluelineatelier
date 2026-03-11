@@ -22,12 +22,12 @@ export function buildPageSections(proj: Record<string, unknown>): PageContentIte
 
   const sections: (PageContentItem | false)[] = [
     hasGallery && { id: "gallery", label: "Gallery" },
-    hasContent(proj.description) &&
-      hasContent(overview?.context) && { id: "overview", label: "Overview" },
     proj.domain === "architecture" && {
       id: "details",
-      label: "Project details",
+      label: "Details",
     },
+    hasContent(proj.description) &&
+      hasContent(overview?.context) && { id: "overview", label: "Overview" },
     hasContent(overview?.challenges) && {
       id: "challenges",
       label: "Challenges",

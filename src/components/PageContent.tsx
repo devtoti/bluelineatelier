@@ -139,7 +139,7 @@ export function PageContent({
             onClick={scrollToTop}
             className={`w-full text-left ${linkClass(PROJECT_INFO_ID)}`}
           >
-            Project info
+            Title
           </button>
         </li>
         {sections.map(({ id, label }) => (

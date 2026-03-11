@@ -2,6 +2,9 @@ import type { ReactNode } from "react";
 import "../../../../projects.css";
 import { notFound, redirect } from "next/navigation";
 import { getStrapiMedia } from "../../../../utils/getStrapiMedia";
+import { DetailsAccordion } from "@/components/DetailsAccordion";
+import { OpenInMapsButton } from "@/components/OpenInMapsButton";
+import { ProjectMobileNav } from "@/components/ProjectMobileNav";
 import { RenderPhotos } from "@/components/RenderPhotos";
 import { ImageCarousel } from "../../../../components/ImageCarousel";
 import { ImageWithCaption } from "@/components/ImageWithCaption";
@@ -18,17 +21,47 @@ type ProjectPageProps = {
 const CaptionText = ({
   title,
   text,
+  className = "",
+  titleClassName = "",
+  textClassName = "",
 }: {
   title: string | undefined;
   text: string | undefined;
+  className?: string;
+  titleClassName?: string;
+  textClassName?: string;
 }) => {
   return (
-    <div className="mt-3 whitespace-pre-line text-[#2B4673]">
-      <p className="pb-2 text-base font-bold uppercase tracking-[0.15em]">
+    <div className={`mt-3 whitespace-pre-line text-[#2B4673] ${className}`}>
+      <p
+        className={`pb-2 text-base font-bold uppercase tracking-[0.15em] ${titleClassName}`}
+      >
         {title}
       </p>
-      <p className="text-base font-normal">{text}</p>
+      <p className={`text-base font-normal ${textClassName}`}>{text}</p>
     </div>
+  );
+};
+
+const EntryText = ({
+  title,
+  text,
+  children,
+}: {
+  title: string | undefined;
+  text: string | undefined;
+  children?: ReactNode;
+}) => {
+  return (
+    <dl className="entry text-[#2B4673] ">
+      <p className="pb-2 text-[#2B4673] font-bold uppercase tracking-[0.15em]">
+        {title}
+      </p>
+      <span className="text-sm font-normal flex items-center">
+        {text}
+        {children}
+      </span>
+    </dl>
   );
 };
 
@@ -113,7 +146,7 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
   };
   const photos = proj.photos as PhotoItem[] | undefined;
   const projectName = String(proj.name ?? "Project image");
-
+  console.log(proj);
   const CAROUSEL_PRIORITY: [string, number][] = [
     ["cover", 0],
     ["render", 1],
@@ -166,12 +199,27 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
   const interventionData = Array.isArray(proj.intervention)
     ? (proj.intervention as Record<string, unknown>[])[0]
     : undefined;
-  const collaboratorsData = interventionData?.collaborators as
-    | { data?: { attributes?: { name?: string }; name?: string }[] }
-    | undefined;
-  const collaboratorsList = (collaboratorsData?.data ?? [])
-    .map((c) => c?.attributes?.name ?? (c as { name?: string })?.name ?? "")
-    .filter(Boolean);
+  // Collaborators: prefer collab (newline-separated string), else collabs or legacy collaborators.data
+  const collabStr =
+    typeof interventionData?.collab === "string"
+      ? (interventionData.collab as string).trim()
+      : "";
+  const collaboratorsFromData = (
+    interventionData?.collaborators as
+      | { data?: { attributes?: { name?: string }; name?: string }[] }
+      | undefined
+  )?.data;
+  const collaboratorsList =
+    collabStr.length > 0
+      ? collabStr
+          .split(/\n/)
+          .map((s) => s.trim())
+          .filter(Boolean)
+      : (collaboratorsFromData ?? [])
+          .map(
+            (c) => c?.attributes?.name ?? (c as { name?: string })?.name ?? "",
+          )
+          .filter(Boolean);
 
   const site = (proj.site as Record<string, unknown>[] | undefined)?.[0] as
     | Record<string, unknown>
@@ -184,7 +232,7 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
   )?.[0] as Record<string, unknown> | undefined;
 
   return (
-    <article className="scrollable-article mt-10 mx-auto max-w-4xl sm:mt-0 sm:pt-10 pt-4 px-4 md:px-6 sm:px-8 pb-12 relative bg-black/2 border-[1px] border-zinc-300 rounded-sm">
+    <article className="scrollable-article mt-10 mx-auto max-w-2xl lg:max-w-4xl sm:mt-0 sm:pt-10 pt-4 px-4 md:px-6 sm:px-8 pb-12 relative bg-black/2 border-[1px] border-zinc-300 rounded-sm">
       {/* <span className="bracket top-0 left-0 absolute w-5 h-5 border-t-2 border-l-2 border-blue-800 opacity-100"></span>
       <span className="bracket top-0 right-0 absolute w-5 h-5 border-t-2 border-r-2 border-blue-800 opacity-100"></span>
       <span className="bracket bottom-0 left-0 absolute w-5 h-5 border-b-2 border-l-2 border-blue-800 opacity-100"></span>
@@ -216,59 +264,85 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
           />
         </section>
       )}
-      {/* Meta grid */}
+      {/* Meta grid (accordion): EntryText title outside accordion, section id="details" */}
       {proj.domain === "architecture" && (
-        <section
-          id="details"
-          className="overview mt-8 bg-black/5 py-4 px-2 grid gap-6 text-xs sm:grid-cols-3"
-        >
-          <>
-            <dl className="space-y-2">
-              <dt className="text-[0.65rem] uppercase tracking-[0.25em] opacity-70">
-                Location
-              </dt>
-              <dd>
-                {[String(site?.city ?? ""), String(site?.country ?? "")].join(
-                  ", ",
-                )}
-              </dd>
-              <dt className="text-[0.65rem] uppercase tracking-[0.25em] opacity-70">
-                Site
-              </dt>
-              <dd>{String(site?.location ?? "")}</dd>
-            </dl>
+        <section id="details">
+          <DetailsAccordion titleSlot={<EntryText title="Details" text="" />}>
+            <EntryText
+              title="Location"
+              text={
+                [String(site?.city ?? ""), String(site?.country ?? "")]
+                  .join(", ")
+                  .trim() || undefined
+              }
+            />
+            <EntryText
+              title="Project Site"
+              text={String(site?.location ?? "") || undefined}
+            >
+              {site?.latitude != null && site?.longitude != null && (
+                <OpenInMapsButton
+                  latitude={Number(site.latitude)}
+                  longitude={Number(site.longitude)}
+                />
+              )}
+            </EntryText>
 
-            <dl className="space-y-2">
-              <dt className="text-[0.65rem] uppercase tracking-[0.25em] opacity-70">
-                Years
-              </dt>
-              <dd>
-                {String(interventionData?.yearStarted ?? "")}
-                {interventionData?.yearCompleted != null
+            <EntryText
+              title="Years"
+              text={
+                String(interventionData?.yearStarted ?? "") +
+                (interventionData?.yearCompleted != null
                   ? ` – ${String(interventionData.yearCompleted)}`
-                  : " – Ongoing"}
-              </dd>
-              {interventionData?.area != null ? (
-                <>
-                  <dt className="text-[0.65rem] uppercase tracking-[0.25em] opacity-70">
-                    Area
-                  </dt>
-                  <dd>{Number(interventionData.area).toLocaleString()} m²</dd>
-                </>
-              ) : null}
-            </dl>
+                  : " – Ongoing")
+              }
+            />
+            {site?.area != null ? (
+              <EntryText
+                title="Site Area"
+                text={`${Number(site.area).toLocaleString()} m²`}
+              />
+            ) : null}
+            {interventionData?.area != null ? (
+              <EntryText
+                title="Intervention Area"
+                text={`${Number(interventionData.area).toLocaleString()} m²`}
+              />
+            ) : null}
 
-            <dl className="space-y-2">
-              {collaboratorsList.length > 0 ? (
-                <>
-                  <dt className="text-[0.65rem] uppercase tracking-[0.25em] opacity-70">
-                    Collaborators
-                  </dt>
-                  <dd>{collaboratorsList.join(", ")}</dd>
-                </>
-              ) : null}
-            </dl>
-          </>
+            {collaboratorsList.length > 0 ? (
+              <EntryText
+                title="Collaborators"
+                text={collaboratorsList.join(" • ")}
+              />
+            ) : null}
+
+            {hasContent(interventionData?.materials) ? (
+              <EntryText
+                title="Materials"
+                text={String(interventionData?.materials)}
+              />
+            ) : null}
+
+            {hasContent(interventionData?.styles) ? (
+              <EntryText
+                title="Styles"
+                text={String(interventionData?.styles)}
+              />
+            ) : null}
+
+            {(() => {
+              const flags: string[] = [];
+              if (interventionData?.isRegenerative) flags.push("Regenerative");
+              if (interventionData?.isSustainable) flags.push("Sustainable");
+              if (interventionData?.usesRegionalMaterials)
+                flags.push("Regional Materials");
+              if (interventionData?.wasComputated) flags.push("Computated");
+              if (interventionData?.wasPrototyped) flags.push("Prototyped");
+              if (flags.length === 0) return null;
+              return <EntryText title="Attributes" text={flags.join(" • ")} />;
+            })()}
+          </DetailsAccordion>
         </section>
       )}
       {/* Project description section */}
@@ -466,6 +540,7 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
           </div>
         </div>
       )}
+      <ProjectMobileNav currentProjectCode={normalizedId} />
     </article>
   );
 }

@@ -57,15 +57,18 @@ export function PortfolioMobileMenu({
   );
 
   const topBarClass = darkTopBar
-    ? "text-zinc-400 hover:text-zinc-300 hover:bg-zinc-800/80 focus-visible:ring-zinc-400"
-    : "text-[#2B4673] hover:border-zinc-400 hover:bg-zinc-900 focus-visible:ring-[#2B4673]";
+    ? "text-zinc-400 hover:text-zinc-300 hover:bg-zinc-800/80 focus-visible:ring-zinc-400 px-2 py-1.5"
+    : "text-[#2B4673] hover:border-zinc-400 hover:bg-zinc-900 focus-visible:ring-[#2B4673] bg-[#EDE7E3] px-2 py-1.5";
 
   return (
     <>
       {/* Mobile top navbar */}
-      <div className="top-navbar-mboile bg-white fixed top-0 inset-x-0 z-40 flex items-center justify-between px-4 py-2 md:hidden">
-        <div className="portfolio-grain-light" aria-hidden />
-        <div className="portfolio-grid-light" aria-hidden />
+      <div
+        className={
+          `top-navbar-mboile fixed top-0 inset-x-0 z-40 flex items-center shadow-sm justify-between px-4 py-2 lg:hidden ` +
+          (!darkTopBar ? " bg-[#EDE7E3]" : "")
+        }
+      >
         <button
           type="button"
           onClick={onOpen}
@@ -88,7 +91,7 @@ export function PortfolioMobileMenu({
 
       {/* Mobile menu overlay: cover-style dark blue + squared grid */}
       {isOpen && (
-        <div className="fixed inset-0 z-50 bg-[#0C1222] bg-black/50 md:hidden">
+        <div className="fixed inset-0 z-50 bg-[#0C1222] bg-black/50 lg:hidden">
           <div className="portfolio-grid-overlay" aria-hidden />
           <div className="relative z-10 flex flex-col h-full">
             <div className="button absolute top-3 right-4">
