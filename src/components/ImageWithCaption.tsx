@@ -1,7 +1,7 @@
 "use client";
 
 import Image, { ImageProps } from "next/image";
-import { useId } from "react";
+import { useId, useState } from "react";
 
 export type ImageWithCaptionProps = Omit<ImageProps, "alt"> & {
   /** Short description for the image (required for a11y). Used as alt and in banner. */
@@ -10,6 +10,8 @@ export type ImageWithCaptionProps = Omit<ImageProps, "alt"> & {
   description?: string;
   /** Optional class for the figure wrapper. */
   figureClassName?: string;
+  /** Fallback image URL when the main src fails to load (e.g. /imgs/placeholder.jpg). */
+  fallbackSrc?: string;
 };
 
 /**
@@ -22,10 +24,18 @@ export function ImageWithCaption({
   description,
   figureClassName = "",
   className,
+  fallbackSrc,
+  src,
   ...imageProps
 }: ImageWithCaptionProps) {
   const captionId = useId();
   const captionText = description ?? alt;
+  const [currentSrc, setCurrentSrc] = useState<string | undefined>(
+    typeof src === "string" ? src : undefined,
+  );
+  const imageSrc =
+    currentSrc ??
+    (typeof src === "string" ? (fallbackSrc ?? src) : src);
 
   return (
     <figure
@@ -36,8 +46,14 @@ export function ImageWithCaption({
     >
       <Image
         {...imageProps}
+        src={imageSrc}
         alt={alt}
         className={`h-auto w-full object-fit mix-blend-multiply ${className ?? ""}`}
+        onError={
+          fallbackSrc
+            ? () => setCurrentSrc(fallbackSrc)
+            : imageProps.onError
+        }
       />
       {captionText !== "" && (
         <figcaption

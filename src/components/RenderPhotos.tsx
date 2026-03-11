@@ -28,6 +28,8 @@ export type RenderPhotosProps = {
   width?: number;
   /** Image height (default 900) */
   height?: number;
+  /** Fallback image URL when a photo fails to load or has no url (e.g. /imgs/placeholder.jpg) */
+  fallbackSrc?: string;
 };
 
 /**
@@ -90,6 +92,7 @@ export function RenderPhotos({
   altFallback,
   width = 1200,
   height = 900,
+  fallbackSrc = "/imgs/placeholder.jpg",
 }: RenderPhotosProps) {
   const list = photos ?? [];
   if (!hasMatchingPhoto(list, nameContains)) return null;
@@ -107,7 +110,8 @@ export function RenderPhotos({
         )}
         <div className="grid grid-cols-1 gap-4 mt-2 sm:gap-5 lg:gap-6">
           {items.map((photo, idx) => {
-            const src = getStrapiMedia(photo.url!);
+            const rawSrc = getStrapiMedia(photo.url!);
+            const src = rawSrc ?? fallbackSrc;
             const alt = String(
               photo.alt ??
                 photo.alternativeText ??
@@ -124,6 +128,7 @@ export function RenderPhotos({
                     width={width}
                     height={height}
                     figureClassName="border-[#2B4673]"
+                    fallbackSrc={fallbackSrc}
                   />
                 </div>
               </PhotoView>

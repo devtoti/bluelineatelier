@@ -14,6 +14,16 @@ const nextConfig: NextConfig = {
         port: "1337",
         pathname: "/**",
       },
+      {
+        protocol: "https",
+        hostname: "upbeat-talent-6d5a2283ac.strapiapp.com",
+        pathname: "/uploads/**",
+      },
+      {
+        protocol: "https",
+        hostname: "upbeat-talent-6d5a2283ac.media.strapiapp.com",
+        pathname: "/**",
+      },
     ],
     dangerouslyAllowLocalIP: true,
   },

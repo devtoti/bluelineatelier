@@ -1,4 +1,5 @@
 import { cache } from "react";
+import { revalidatePath } from "next/cache";
 
 export type StrapiProjectsResponse = {
   data: StrapiProjectNode[];
@@ -16,14 +17,28 @@ export type StrapiProjectNode = {
  * project pages then read from this same cache.
  */
 export const getProjects = cache(async (): Promise<StrapiProjectsResponse> => {
-  const baseUrl = process.env.NEXT_PUBLIC_STRAPI_URL;
-  if (!baseUrl) {
-    throw new Error("NEXT_PUBLIC_STRAPI_URL is not defined");
+  // Set baseUrl based on NODE_ENV
+  const isAccessingProductionStrapi = false;
+  let baseUrl: string | undefined;
+  if (isAccessingProductionStrapi || process.env.NODE_ENV === "production") {
+    baseUrl = process.env.NEXT_PUBLIC_STRAPI_URL;
+  } else {
+    baseUrl = "http://localhost:1337";
+  } 
+  const apiToken = process.env.NEXT_PUBLIC_STRAPI_API_TOKEN;
+  if (!apiToken) {
+    throw new Error("NEXT_PUBLIC_STRAPI_API_TOKEN is not defined");
   }
   try {
     const res = await fetch(`${baseUrl}/api/projects?populate=*`, {
       // In dev, no cache so hot reload/refresh always sees latest Strapi data
-      next: process.env.NODE_ENV === "development" ? { revalidate: 0 } : { revalidate: 60 },
+      next:
+        process.env.NODE_ENV === "development"
+          ? { revalidate: 0 }
+          : { revalidate: 60 },
+      headers: {
+        Authorization: `Bearer ${apiToken}`,
+      },
     });
     if (!res.ok) {
       throw new Error(`Strapi returned ${res.status}`);
@@ -42,6 +57,17 @@ export const getProjects = cache(async (): Promise<StrapiProjectsResponse> => {
     throw err;
   }
 });
+
+/**
+ * Manually revalidate all portfolio-related pages that depend on Strapi data.
+ * Call this from a Server Action or Route Handler after Strapi content changes.
+ */
+export async function revalidatePortfolioPaths() {
+  revalidatePath("/portfolio");
+  revalidatePath("/portfolio/00");
+  revalidatePath("/portfolio/contact");
+  revalidatePath("/portfolio/projects/[id]");
+}
 
 function pcodeFromNode(node: StrapiProjectNode): string {
   const attrs = node?.attributes ?? (node as Record<string, unknown>);

@@ -95,6 +95,8 @@ function normalizePcode(code: string): string {
   const n = code.replace(/^0+/, "") || "0";
   return n.length === 1 ? `0${n}` : n.padStart(2, "0");
 }
+
+const PLACEHOLDER_IMAGE = "/imgs/placeholder.jpg";
 export default async function ProjectPage({ params }: ProjectPageProps) {
   const { id } = await params;
   const normalizedId = normalizePcode(id);
@@ -144,7 +146,31 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
     description?: string;
     caption?: string;
   };
-  const photos = proj.photos as PhotoItem[] | undefined;
+
+  /** Normalize Strapi media relation (data[].attributes or array) to PhotoItem[]. Handles multiple response shapes. */
+  function normalizeProjectPhotos(raw: unknown): PhotoItem[] {
+    if (raw == null) return [];
+    const withData = raw as { data?: unknown[] };
+    const arr = Array.isArray(withData?.data)
+      ? withData.data
+      : Array.isArray(raw)
+        ? (raw as unknown[])
+        : [];
+    return arr.map((item) => {
+      const o = item && typeof item === "object" ? (item as Record<string, unknown>) : {};
+      const attrs = (o?.attributes ?? o) as Record<string, unknown>;
+      return {
+        name: [attrs?.name, o?.name].find((v) => typeof v === "string") as string | undefined,
+        url: [attrs?.url, o?.url].find((v) => typeof v === "string") as string | undefined,
+        alt: [attrs?.alternativeText, attrs?.alt, o?.alternativeText].find((v) => typeof v === "string") as string | undefined,
+        alternativeText: [attrs?.alternativeText, attrs?.alt].find((v) => typeof v === "string") as string | undefined,
+        caption: [attrs?.caption, o?.caption].find((v) => typeof v === "string") as string | undefined,
+        description: [attrs?.description, o?.description].find((v) => typeof v === "string") as string | undefined,
+      };
+    });
+  }
+
+  const photos: PhotoItem[] = normalizeProjectPhotos(proj.photos);
   const projectName = String(proj.name ?? "Project image");
   const CAROUSEL_PRIORITY: [string, number][] = [
     ["cover", 0],
@@ -165,7 +191,7 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
     return 99;
   }
 
-  const carouselItems = (photos ?? [])
+  const carouselItemsRaw = (photos ?? [])
     .filter(
       (p): p is PhotoItem & { url: string } =>
         typeof p?.url === "string" && p.url.length > 0,
@@ -180,11 +206,21 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
         (v) => typeof v === "string" && v.length > 0,
       ) as string | undefined;
       return {
-        url: getStrapiMedia(p.url),
+        url: getStrapiMedia(p.url) ?? PLACEHOLDER_IMAGE,
         alt: alt ?? projectName,
         description: description ?? alt ?? projectName,
       };
     });
+  const carouselItems =
+    carouselItemsRaw.length > 0
+      ? carouselItemsRaw
+      : [
+          {
+            url: PLACEHOLDER_IMAGE,
+            alt: projectName,
+            description: "No image",
+          },
+        ];
 
   const tagsRaw = proj.tags;
   const tagsList: string[] = Array.isArray(tagsRaw)
@@ -245,16 +281,15 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
         )}
       </header>
 
-      {carouselItems.length > 0 && (
-        <section id="gallery" className="mt-8">
-          <ImageCarousel
-            items={carouselItems}
-            width={1200}
-            height={800}
-            className=""
-          />
-        </section>
-      )}
+      <section id="gallery" className="mt-8">
+        <ImageCarousel
+          items={carouselItems}
+          width={1200}
+          height={800}
+          className=""
+          fallbackSrc={PLACEHOLDER_IMAGE}
+        />
+      </section>
       {proj.domain === "architecture" && (
         <section id="details">
           <DetailsAccordion titleSlot={<EntryText title="Details" text="" />}>
@@ -372,6 +407,7 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
           photos={photos}
           nameContains="master"
           altFallback="Master Plan Drawing"
+          fallbackSrc={PLACEHOLDER_IMAGE}
         />
 
         {(photos ?? []).filter(
@@ -392,7 +428,7 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
                 .map((sketch, idx) => (
                   <div key={sketch.url ?? idx}>
                     <ImageWithCaption
-                      src={getStrapiMedia(sketch.url)}
+                      src={getStrapiMedia(sketch.url) ?? PLACEHOLDER_IMAGE}
                       alt={String(
                         sketch.alt ??
                           sketch.alternativeText ??
@@ -417,30 +453,35 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
           nameContains="floor-plan"
           title="Floor Plans"
           altFallback="Floor Plan Drawing"
+          fallbackSrc={PLACEHOLDER_IMAGE}
         />
         <RenderPhotos
           photos={photos}
           nameContains="elevation"
           title="Elevations"
           altFallback="Elevation Drawing"
+          fallbackSrc={PLACEHOLDER_IMAGE}
         />
         <RenderPhotos
           photos={photos}
           nameContains="section-cut"
           title="Section Cuts"
           altFallback="Section Cut Drawing"
+          fallbackSrc={PLACEHOLDER_IMAGE}
         />
         <RenderPhotos
           photos={photos}
           nameContains="facade-cut"
           title="Facade Cuts"
           altFallback="Facade Cut Drawing"
+          fallbackSrc={PLACEHOLDER_IMAGE}
         />
         <RenderPhotos
           photos={photos}
           nameContains="construction-detail"
           title="Construction Details"
           altFallback="Construction Detail Drawing"
+          fallbackSrc={PLACEHOLDER_IMAGE}
         />
 
         <ShowWhenText value={overview?.results}>

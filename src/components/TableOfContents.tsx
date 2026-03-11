@@ -6,6 +6,9 @@ import type {
 } from "@/lib/strapiProjects";
 import { getStrapiMedia } from "@/utils/getStrapiMedia";
 
+const FALLBACK_IMAGE = "/imgs/placeholder.jpg";
+const FALLBACK_IMAGE_ALT = "No image";
+
 function toTwoDigitPcode(value: string | number | undefined): string {
   if (value == null) return "00";
   const s = String(value).replace(/^0+/, "") || "0";
@@ -17,11 +20,39 @@ type PhotoItem = {
   url?: string;
 };
 
+/** Normalize Strapi media relation (data[].attributes) or flat array to PhotoItem[]. */
+function normalizeProjectPhotos(photos: unknown): PhotoItem[] {
+  if (Array.isArray(photos)) {
+    const first = photos[0];
+    if (first && typeof first === "object" && "attributes" in first) {
+      return (photos as { attributes?: { name?: string; url?: string } }[]).map(
+        (item) => ({
+          name: item?.attributes?.name,
+          url: item?.attributes?.url,
+        }),
+      );
+    }
+    return (photos as PhotoItem[]).filter(
+      (p): p is PhotoItem => p != null && typeof p === "object",
+    );
+  }
+  const data = (
+    photos as
+      | { data?: { attributes?: { name?: string; url?: string } }[] }
+      | undefined
+  )?.data;
+  if (!Array.isArray(data)) return [];
+  return data.map((item) => ({
+    name: item?.attributes?.name,
+    url: item?.attributes?.url,
+  }));
+}
+
 function getThumbnailUrl(projectNode: StrapiProjectNode): string | null {
   const attrs =
     projectNode?.attributes ?? (projectNode as Record<string, unknown>);
-  const photos = attrs?.photos as PhotoItem[] | undefined;
-  if (!Array.isArray(photos) || photos.length === 0) return null;
+  const photos = normalizeProjectPhotos(attrs?.photos);
+  if (photos.length === 0) return null;
   const withUrl = photos.filter(
     (p): p is PhotoItem & { url: string } =>
       typeof p?.url === "string" && p.url.length > 0,
@@ -119,12 +150,13 @@ export function TableOfContents({
                     />
                   </div>
                 ) : (
-                  <div
-                    className="absolute inset-0 flex items-center justify-center text-zinc-400"
-                    aria-hidden
-                  >
-                    <span className="text-sm font-medium">No image</span>
-                  </div>
+                  <Image
+                    src={FALLBACK_IMAGE}
+                    alt={FALLBACK_IMAGE_ALT}
+                    fill
+                    className="object-contain transition-transform group-hover:scale-[1.02] opacity-30"
+                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                  />
                 )}
               </div>
               <div className="flex flex-1 flex-col p-4 text-left">

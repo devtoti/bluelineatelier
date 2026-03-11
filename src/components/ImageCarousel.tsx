@@ -2,6 +2,8 @@
 
 import Image from "next/image";
 import { useEffect, useId, useRef, useState } from "react";
+
+const DEFAULT_FALLBACK = "/imgs/placeholder.jpg";
 // @ts-expect-error package exports don't expose types to moduleResolution
 import { Splide, SplideSlide } from "@splidejs/react-splide";
 import type { Options, Splide as SplideInstance } from "@splidejs/splide";
@@ -52,6 +54,8 @@ export type ImageCarouselProps = {
   className?: string;
   /** Optional class for the thumbnail strip */
   thumbsClassName?: string;
+  /** Fallback image URL when an item fails to load (default: /imgs/placeholder.jpg) */
+  fallbackSrc?: string;
 };
 
 const mainOptions: Options = {
@@ -95,12 +99,71 @@ const thumbnailOptions: Options = {
  * ArchDaily-style image carousel: one main image (16:9 on desktop, 1:1 on mobile) with Splide thumbnail
  * navigation below. Main and thumbnails stay in sync. Accessible: ARIA, focus.
  */
+function CarouselImage({
+  item,
+  width,
+  height,
+  fallbackSrc,
+  priority,
+}: {
+  item: CarouselItem;
+  width: number;
+  height: number;
+  fallbackSrc: string;
+  priority?: boolean;
+}) {
+  const [src, setSrc] = useState(item.url);
+  const effectiveSrc = src || fallbackSrc;
+  return (
+    <Image
+      src={effectiveSrc}
+      alt={item.alt}
+      width={width}
+      height={height}
+      className="max-h-full max-w-full object-contain"
+      style={{
+        width: "auto",
+        height: "auto",
+        maxWidth: "100%",
+        maxHeight: "100%",
+        display: "block",
+        mixBlendMode: "multiply",
+      }}
+      priority={priority}
+      sizes="(max-width: 768px) 100vw, 640px"
+      onError={() => setSrc(fallbackSrc)}
+    />
+  );
+}
+
+function CarouselThumbImage({
+  src,
+  fallbackSrc,
+}: {
+  src: string;
+  fallbackSrc: string;
+}) {
+  const [currentSrc, setCurrentSrc] = useState(src || fallbackSrc);
+  return (
+    <Image
+      src={currentSrc}
+      alt=""
+      width={104}
+      height={58}
+      className="h-full w-full object-cover"
+      sizes="104px"
+      onError={() => setCurrentSrc(fallbackSrc)}
+    />
+  );
+}
+
 export function ImageCarousel({
   items,
   width = 1200,
   height = 800,
   className = "",
   thumbsClassName = "",
+  fallbackSrc = DEFAULT_FALLBACK,
 }: ImageCarouselProps) {
   const regionId = useId();
   const mainId = `${regionId}-main-slider`;
@@ -147,7 +210,7 @@ export function ImageCarousel({
         >
           {items.map((item, index) => (
             <SplideSlide key={`${item.url}-${index}`}>
-              <PhotoView src={item.url}>
+              <PhotoView src={item.url || fallbackSrc}>
                 <div
                   className="carousel-main-image relative cursor-pointer overflow-hidden rounded-sm border border-zinc-300 bg-zinc-200/80 transition-opacity hover:opacity-95"
                   role="button"
@@ -161,22 +224,12 @@ export function ImageCarousel({
                   }}
                 >
                   <div className="absolute inset-0 flex items-center justify-center bg-zinc-200">
-                    <Image
-                      src={item.url}
-                      alt={item.alt}
+                    <CarouselImage
+                      item={item}
                       width={width}
                       height={height}
-                      className="max-h-full max-w-full object-contain"
-                      style={{
-                        width: "auto",
-                        height: "auto",
-                        maxWidth: "100%",
-                        maxHeight: "100%",
-                        display: "block",
-                        mixBlendMode: "multiply",
-                      }}
+                      fallbackSrc={fallbackSrc}
                       priority={index === 0}
-                      sizes="(max-width: 768px) 100vw, 640px"
                     />
                   </div>
                 </div>
@@ -198,17 +251,13 @@ export function ImageCarousel({
             aria-label="Image thumbnails"
           >
             {items.map((item, index) => {
-              const thumbSrc = item.thumbUrl ?? item.url;
+              const thumbSrc = item.thumbUrl ?? item.url ?? fallbackSrc;
               return (
                 <SplideSlide key={`thumb-${item.url}-${index}`}>
                   <div className="splide__slide__container relative h-full w-full overflow-hidden rounded border-2 border-transparent bg-zinc-100">
-                    <Image
+                    <CarouselThumbImage
                       src={thumbSrc}
-                      alt=""
-                      width={104}
-                      height={58}
-                      className="h-full w-full object-cover"
-                      sizes="104px"
+                      fallbackSrc={fallbackSrc}
                     />
                   </div>
                 </SplideSlide>
