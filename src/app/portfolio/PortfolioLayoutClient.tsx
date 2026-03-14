@@ -175,9 +175,7 @@ export function PortfolioLayoutClient({
         <div className="portfolio-grid" aria-hidden />
         <div className="hidden md:flex row-start-1 row-end-4 min-w-0 flex-col">
           <div className="flex-1 min-h-0 flex items-center justify-center">
-            <div className="sticky top-1/2 -translate-y-1/2 flex items-center">
-              <PortfolioChevronLeft />
-            </div>
+            <PortfolioChevronLeft />
           </div>
           {showNavOnFallback && navItems00 && navItems00.length > 0 && (
             <div
@@ -192,9 +190,7 @@ export function PortfolioLayoutClient({
           {children}
         </div>
         <div className="hidden md:flex row-start-2 row-end-3 justify-center">
-          <div className="sticky top-1/2 -translate-y-1/2 flex items-center">
-            <PortfolioChevronRight />
-          </div>
+          <PortfolioChevronRight />
         </div>
       </div>
     </>

@@ -1,5 +1,5 @@
 export function getStrapiMedia(url) {
-  const baseUrl = process.env.NEXT_PUBLIC_STRAPI_URL;
+  const baseUrl = process.env.NODE_ENV === "development" ? process.env.NEXT_PUBLIC_STRAPI_DEV_URL : process.env.NEXT_PUBLIC_STRAPI_URL;
 
     if (url == null) {
       return null;

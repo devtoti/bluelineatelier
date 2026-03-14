@@ -25,7 +25,7 @@ export const getProjects = cache(async (): Promise<StrapiProjectsResponse> => {
   } else {
     baseUrl = "http://localhost:1337";
   } 
-  const apiToken = process.env.NEXT_PUBLIC_STRAPI_API_TOKEN;
+  const apiToken = process.env.NODE_ENV === "development" ? process.env.NEXT_PUBLIC_STRAPI_DEV_API_TOKEN : process.env.NEXT_PUBLIC_STRAPI_API_TOKEN;
   if (!apiToken) {
     throw new Error("NEXT_PUBLIC_STRAPI_API_TOKEN is not defined");
   }
