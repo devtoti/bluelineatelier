@@ -1,5 +1,9 @@
+"use client";
+
 import Link from "next/link";
 import Image from "next/image";
+import { useEffect, useRef } from "react";
+import gsap from "gsap";
 import type {
   StrapiProjectsResponse,
   StrapiProjectNode,
@@ -65,6 +69,73 @@ function getThumbnailUrl(projectNode: StrapiProjectNode): string | null {
   return getStrapiMedia(pick.url) ?? null;
 }
 
+type CardProps = {
+  pcode: string;
+  name: string;
+  summary: string;
+  domain: string;
+  thumbnailUrl: string | null;
+  href: string;
+};
+
+function Card({ pcode, name, summary, domain, thumbnailUrl, href }: CardProps) {
+  return (
+    <Link
+      key={pcode}
+      href={href}
+      className="toc-card-link card group relative flex h-full w-full flex-col overflow-hidden border border-[1px] border-gray-600/20 shadow-sm transition-shadow hover:shadow-md hover:border-[#53A4D7] hover:bg-black/10 border-solid focus:outline-none focus:ring-1 focus:ring-[#53A4D7] focus:ring-offset-2"
+      style={{ cursor: "pointer" }}
+    >
+      <span className="bracket top-0 left-0 absolute w-4 h-4 border-t-1 border-l-1 border-white opacity-30 group-hover:opacity-0"></span>
+      <span className="bracket top-0 right-0 absolute w-4 h-4 border-t-1 border-r-1 border-white opacity-30 group-hover:opacity-0"></span>
+      <span className="bracket bottom-0 left-0 absolute w-4 h-4 border-b-1 border-l-1 border-white opacity-30 group-hover:opacity-0"></span>
+      <span className="bracket bottom-0 right-0 absolute w-4 h-4 border-b-1 border-r-1 border-white opacity-30 group-hover:opacity-0"></span>
+      <div className="relative aspect-[16/10] w-full shrink-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-4 left-4 z-10">
+          <h2 className="toc-card-pcode font-heading text-2xl font-regular text-zinc-400 transition-colors duration-400">
+            {pcode || "00"}
+          </h2>
+        </div>
+        {thumbnailUrl ? (
+          <div className="absolute inset-0 p-12 w-full h-full bg-black/5 flex items-center justify-center">
+            <Image
+              src={thumbnailUrl}
+              alt=""
+              fill
+              className="object-contain object-center h-3/5 transition-transform scale-80 transition-opacity duration-400 opacity-50 group-hover:opacity-100 group-hover:scale-90 mix-blend-multiply"
+              sizes="(max-width: 640px) 60vw, (max-width: 1024px) 30vw, 20vw"
+            />
+          </div>
+        ) : (
+          <Image
+            src={FALLBACK_IMAGE}
+            alt={FALLBACK_IMAGE_ALT}
+            fill
+            className="object-contain transition-transform group-hover:scale-[1.02] opacity-30"
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+          />
+        )}
+      </div>
+      <div className="flex min-h-0 flex-1 flex-col p-4 text-left bg-black/15 pointer-events-none">
+        <h3 className="font-heading text-lg font-regular group-hover:text-zinc-200 text-zinc-400 ">
+          {name}
+        </h3>
+        <span className="mt-2 inline-block w-min capitalize px-3 py-1 text-xs font-regular rounded-full bg-[#191F30] text-[#53A4D7] border border-[#53A4D7]/30 opacity-90 shadow-sm pointer-events-auto">
+          {domain}
+        </span>
+        {summary ? (
+          <p className="mt-2 line-clamp-4 flex-1 h-32 text-xs text-zinc-600">
+            {summary}
+          </p>
+        ) : null}
+        {/* <p className="mt-3 text-xs font-regular uppercase tracking-widest text-[#53A4D7] opacity-80">
+          View project →
+        </p> */}
+      </div>
+    </Link>
+  );
+}
+
 export type TableOfContentsProps = {
   projects: StrapiProjectsResponse;
   className?: string;
@@ -74,6 +145,8 @@ export function TableOfContents({
   projects,
   className = "",
 }: TableOfContentsProps) {
+  const sectionRef = useRef<HTMLElement>(null);
+
   // Put all projects in "itemsByPcode", mapping pcode -> project
   const itemsByPcode: Record<string, StrapiProjectNode> = {};
   if (Array.isArray(projects?.data)) {
@@ -98,17 +171,43 @@ export function TableOfContents({
     .map((pcode) => itemsByPcode[pcode])
     .filter(Boolean);
 
+  useEffect(() => {
+    if (!sectionRef.current) return;
+    const prefersReducedMotion =
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (prefersReducedMotion) return;
+
+    const cards =
+      sectionRef.current.querySelectorAll<HTMLElement>(".toc-card-link");
+    if (cards.length === 0) return;
+
+    const ctx = gsap.context(() => {
+      gsap.from(cards, {
+        opacity: 0,
+        y: 24,
+        duration: 1.0,
+        stagger: 0.5,
+        ease: "power2.out",
+        overwrite: "auto",
+      });
+    }, sectionRef);
+
+    return () => ctx.revert();
+  }, []);
+
   return (
     <>
       <style
         dangerouslySetInnerHTML={{
           __html:
-            ".toc-card-link:hover .toc-card-pcode { color: #FACF6A !important; }",
+            ".toc-card-link { cursor: pointer !important; } .toc-card-link:hover .toc-card-pcode { color: #FACF6A !important; }",
         }}
       />
       <section
+        ref={sectionRef}
         aria-label="Table of Contents"
-        className={`grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 ${className}`}
+        className={`grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 items-stretch ${className}`}
       >
         {items.map((project) => {
           const attrs =
@@ -126,53 +225,18 @@ export function TableOfContents({
             String(attrs?.summary ?? attrs?.description ?? "").trim() || "";
           const thumbnailUrl = getThumbnailUrl(project);
           const href = `/portfolio/projects/${pcode}`;
-
+          const domain =
+            typeof attrs?.domain === "string" ? attrs.domain : "architecture";
           return (
-            <Link
+            <Card
               key={pcode}
+              pcode={pcode}
+              name={name}
+              summary={summary}
+              thumbnailUrl={thumbnailUrl}
               href={href}
-              className="toc-card-link card group relative flex flex-col overflow-hidden border border-gray-600/50 bg-black/20 shadow-sm transition-shadow hover:shadow-md hover:border-zinc-100 hover:bg-black/10 border-solid focus:outline-none focus:ring-2 focus:ring-[#2B4673] focus:ring-offset-2"
-            >
-              <div className="relative aspect-[16/10] w-full shrink-0 overflow-hidden">
-                <div className="absolute top-4 left-4 z-10">
-                  <h2 className="toc-card-pcode font-heading text-3xl font-medium text-zinc-200 transition-colors duration-200">
-                    {pcode || "00"}
-                  </h2>
-                </div>
-                {thumbnailUrl ? (
-                  <div className="absolute inset-0 w-full h-full bg-white/5 flex items-center justify-center">
-                    <Image
-                      src={thumbnailUrl}
-                      alt=""
-                      fill
-                      className="object-contain transition-transform group-hover:scale-[1.02]"
-                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                    />
-                  </div>
-                ) : (
-                  <Image
-                    src={FALLBACK_IMAGE}
-                    alt={FALLBACK_IMAGE_ALT}
-                    fill
-                    className="object-contain transition-transform group-hover:scale-[1.02] opacity-30"
-                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                  />
-                )}
-              </div>
-              <div className="flex flex-1 flex-col p-4 text-left">
-                <h3 className="font-heading text-lg font-semibold text-zinc-200 group-hover:underline">
-                  {name}
-                </h3>
-                {summary ? (
-                  <p className="mt-2 line-clamp-3 flex-1 truncate h-32 text-sm text-zinc-500">
-                    {summary}
-                  </p>
-                ) : null}
-                <p className="mt-3 text-xs font-medium uppercase tracking-widest text-[#53A4D7] opacity-80">
-                  View project →
-                </p>
-              </div>
-            </Link>
+              domain={domain}
+            />
           );
         })}
       </section>

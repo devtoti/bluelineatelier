@@ -173,13 +173,13 @@ export function PortfolioLayoutClient({
       >
         <div className="portfolio-grain" aria-hidden />
         <div className="portfolio-grid" aria-hidden />
-        <div className="hidden md:flex row-start-1 row-end-4 min-w-0 flex-col">
-          <div className="flex-1 min-h-0 flex items-center justify-center">
+        <div className="hidden md:flex row-start-1 row-end-4 min-w-0 flex-col relative">
+          <div className="absolute inset-0 flex items-center justify-center">
             <PortfolioChevronLeft />
           </div>
           {showNavOnFallback && navItems00 && navItems00.length > 0 && (
             <div
-              className="test pb-10 pl-2 hidden lg:block"
+              className="test pb-10 pl-2 hidden lg:block relative z-10 mt-auto"
               aria-label="Project index"
             >
               <ProjectNavigation items={navItems00} activeId="00" darkBg />

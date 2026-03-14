@@ -54,8 +54,9 @@ export default async function TableOfContentsZeroPage() {
           <span style={{ color: "#BB2EB5" }}>( )</span>
         </h1>
         <p className="text-zinc-300 text-sm mb-10">
-          A collection of architectural, programming, and design projects. Click
-          a card navigate to the project.
+          {
+            "// A collection of architectural, programming, and design projects."
+          }
         </p>
         <TableOfContents projects={projectsData} />
       </div>

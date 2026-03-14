@@ -84,7 +84,9 @@ const coverChevronColor = "#a1a1aa";
 const projectPageChevronColor = "#2B4673";
 
 function isProjectPage(pathname: string | null): boolean {
-  return !!pathname && /^\/portfolio\/projects\/(01|02|03|04|05|06)$/.test(pathname);
+  return (
+    !!pathname && /^\/portfolio\/projects\/(01|02|03|04|05|06)$/.test(pathname)
+  );
 }
 function isPortfolio(pathname: string | null): boolean {
   return !!(pathname === "/portfolio" || pathname?.startsWith("/portfolio/"));
@@ -100,12 +102,14 @@ export function PortfolioChevronLeft() {
   const { prev } = getPrevNext(pathname);
   if (prev == null) return <span className="w-10 h-10" aria-hidden />;
 
-  const color = isProjectPage(pathname) ? projectPageChevronColor : coverChevronColor;
+  const color = isProjectPage(pathname)
+    ? projectPageChevronColor
+    : coverChevronColor;
 
   return (
     <Link
       href={prev}
-      className={chevronLinkClass}
+      className={`chevron-left ${chevronLinkClass} group`}
       aria-label="Previous project"
     >
       <RiArrowLeftWideLine
@@ -124,10 +128,16 @@ export function PortfolioChevronRight() {
   const { next } = getPrevNext(pathname);
   if (next == null) return <span className="w-10 h-10" aria-hidden />;
 
-  const color = isProjectPage(pathname) ? projectPageChevronColor : coverChevronColor;
+  const color = isProjectPage(pathname)
+    ? projectPageChevronColor
+    : coverChevronColor;
 
   return (
-    <Link href={next} className={chevronLinkClass} aria-label="Next project">
+    <Link
+      href={next}
+      className={`chevron-right ${chevronLinkClass} group`}
+      aria-label="Next project"
+    >
       <RiArrowRightWideLine
         className="h-10 w-10"
         aria-hidden
