@@ -2,8 +2,6 @@ import { getProjects, type StrapiProjectsResponse } from "@/lib/strapiProjects";
 import { TableOfContents } from "@/components/TableOfContents";
 import { RetryButton } from "@/components/RetryButton";
 
-export const dynamic = "force-dynamic";
-
 export default async function TableOfContentsZeroPage() {
   let projectsData: StrapiProjectsResponse | null = null;
   let fetchError: Error | null = null;
@@ -36,7 +34,23 @@ export default async function TableOfContentsZeroPage() {
                 {fetchError.message}
               </p>
             )}
-            <RetryButton label="Retry" className="mt-4" />
+          <div className="mt-4 flex flex-row gap-3">
+              <div className="flex-1">
+                <RetryButton
+                  label="Refresh Page"
+                  className="w-full rounded border border-zinc-500 bg-zinc-900 px-4 py-2 text-sm font-medium text-zinc-200 transition-colors hover:border-zinc-400 hover:bg-zinc-800 text-center"
+                />
+              </div>
+              <div className="flex-1">
+                <a
+                  href="/docs/antonio-ruiz-portfolio-architecture.pdf"
+                  className="block w-full rounded border border-zinc-500 bg-zinc-900 px-4 py-2 text-sm font-medium text-zinc-200 transition-colors hover:border-zinc-400 hover:bg-zinc-800 text-center"
+                  download
+                >
+                  View PDF Portfolio
+                </a>
+              </div>
+            </div>
           </div>
         </div>
       </div>

@@ -1,8 +1,18 @@
 import Link from "next/link";
 import Script from "next/script";
 import { PortfolioPageAnimations } from "./PortfolioPageAnimations";
+import { getProjects } from "@/lib/strapiProjects";
+import { RetryButton } from "@/components/RetryButton";
 
 export default async function Portfolio() {
+  let fetchError: string | null = null;
+  try {
+    // Warm the last-good snapshot so subsequent routes load faster.
+    await getProjects();
+  } catch (err) {
+    fetchError = err instanceof Error ? err.message : String(err);
+  }
+
   return (
     <div className="front-cover relative min-h-[100svh] h-svh max-h-svh w-full min-w-0 max-w-full font-sans overflow-hidden">
       <PortfolioPageAnimations>
@@ -99,6 +109,17 @@ export default async function Portfolio() {
               </svg>
             </a>
           </div>
+          {fetchError && (
+            <div className="mt-6 rounded border border-amber-500/50 bg-amber-950/20 p-4 text-amber-200 w-full max-w-xl">
+              <p className="font-medium">Projects could not be loaded</p>
+              <p className="mt-1 text-sm text-zinc-400">
+                Strapi may be temporarily unavailable (e.g. 503). Please try
+                again in a moment.
+              </p>
+              <p className="mt-2 text-xs text-zinc-500 font-mono">{fetchError}</p>
+              <RetryButton label="Retry" className="mt-4" />
+            </div>
+          )}
         </div>
         </div>
       </PortfolioPageAnimations>
