@@ -1,4 +1,4 @@
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 
 export type StrapiProjectsResponse = {
   data: StrapiProjectNode[];
@@ -15,13 +15,22 @@ export type StrapiProjectNode = {
  *
  * UX goal:
  * - Keep serving the last successful snapshot when Strapi is temporarily failing (e.g. 503).
- * - Refresh the snapshot only every ~30-60 minutes.
+ * - Persist the snapshot across cold starts via Next.js/Vercel data cache.
+ * - Refresh the snapshot only every ~8 hours (default, configurable).
  *
  * Note:
- * - This is an in-memory snapshot per Vercel instance (no new services).
- * - On cold start, if Strapi is down and we have no snapshot yet, callers should show a retry UI.
+ * - We still keep an in-memory snapshot per Vercel instance for extra resilience.
+ * - The underlying `fetch` uses Vercel's persistent data cache, so cold starts can often be served
+ *   without contacting Strapi.
  */
-const PROJECTS_SNAPSHOT_TTL_MS = 45 * 60 * 1000; // 30-60 minutes target
+const PROJECTS_IN_MEMORY_SNAPSHOT_TTL_MS = 45 * 60 * 1000; // optimization for the same instance
+
+const PROJECTS_STRAPI_FETCH_REVALIDATE_SECONDS =
+  Number(process.env.STRAPI_PROJECTS_REVALIDATE_SECONDS ?? 8 * 60 * 60); // 8h default
+
+const STRAPI_PROJECTS_CACHE_TAG = "strapi-projects";
+const STRAPI_PROJECTS_DEBUG_CACHE =
+  process.env.STRAPI_PROJECTS_DEBUG_CACHE === "true";
 
 let lastGoodProjects: StrapiProjectsResponse | null = null;
 let lastGoodAtMs = 0;
@@ -51,14 +60,32 @@ async function fetchProjectsFromStrapi(): Promise<StrapiProjectsResponse> {
   const baseUrl = getStrapiBaseUrl();
   const apiToken = getStrapiApiToken();
 
-  // We manage staleness ourselves; bypass Next's fetch cache to avoid
-  // caching transient failures.
+  const t0 = Date.now();
   const res = await fetch(`${baseUrl}/api/projects?populate=*`, {
-    cache: "no-store",
+    // Persist the last successful response across cold starts.
+    // Vercel will serve cached data and only revalidate after the given TTL.
+    cache: "force-cache",
+    next: {
+      revalidate: PROJECTS_STRAPI_FETCH_REVALIDATE_SECONDS,
+      // Allows `revalidatePortfolioPaths()` to force-refresh the persistent snapshot immediately.
+      tags: [STRAPI_PROJECTS_CACHE_TAG],
+    },
     headers: {
       Authorization: `Bearer ${apiToken}`,
     },
   });
+
+  if (STRAPI_PROJECTS_DEBUG_CACHE) {
+    const xNextjsCache = res.headers.get("x-nextjs-cache");
+    const xVercelCache = res.headers.get("x-vercel-cache");
+    const cacheHint =
+      xVercelCache ?? xNextjsCache ?? "(no cache headers present)";
+    console.log(
+      `[strapiProjects] fetch /api/projects status=${res.status} dtMs=${
+        Date.now() - t0
+      } cache=${cacheHint}`,
+    );
+  }
 
   if (!res.ok) {
     // Preserve status code so caller can show a meaningful retry UI.
@@ -112,7 +139,7 @@ export async function getProjects(): Promise<StrapiProjectsResponse> {
   if (
     lastGoodProjects &&
     now - lastGoodAtMs >= 0 &&
-    now - lastGoodAtMs < PROJECTS_SNAPSHOT_TTL_MS
+    now - lastGoodAtMs < PROJECTS_IN_MEMORY_SNAPSHOT_TTL_MS
   ) {
     return lastGoodProjects;
   }
@@ -141,6 +168,9 @@ export async function revalidatePortfolioPaths() {
   lastGoodProjects = null;
   lastGoodAtMs = 0;
   refreshInFlight = null;
+
+  // Invalidate the persistent (cross-instance) cache for this Strapi response.
+  revalidateTag(STRAPI_PROJECTS_CACHE_TAG, "max");
 
   revalidatePath("/portfolio");
   revalidatePath("/portfolio/00");

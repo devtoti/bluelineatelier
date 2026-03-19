@@ -2,14 +2,23 @@ import { getProjects, type StrapiProjectsResponse } from "@/lib/strapiProjects";
 import { TableOfContents } from "@/components/TableOfContents";
 import { RetryButton } from "@/components/RetryButton";
 
+export const dynamic = "force-dynamic";
+
 export default async function TableOfContentsZeroPage() {
   let projectsData: StrapiProjectsResponse | null = null;
   let fetchError: Error | null = null;
   try {
     projectsData = await getProjects();
-  } catch (err) {
-    console.error("Strapi fetch failed:", err);
-    fetchError = err instanceof Error ? err : new Error(String(err));
+  } catch {
+    // Strapi can be temporarily unavailable during cold starts.
+    // Retry once so we don't permanently render the error state.
+    try {
+      projectsData = await getProjects();
+      fetchError = null;
+    } catch (err2) {
+      console.error("Strapi fetch failed:", err2);
+      fetchError = err2 instanceof Error ? err2 : new Error(String(err2));
+    }
   }
 
   if (fetchError || !projectsData) {
