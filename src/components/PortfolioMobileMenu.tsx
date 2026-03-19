@@ -24,6 +24,7 @@ export function PortfolioMobileMenu({
   onClose,
   onOpen,
 }: PortfolioMobileMenuProps) {
+  const hasProjectNav = Array.isArray(items) && items.length > 0;
   const normalizedActive = activeId.replace(/^0+/, "") || "0";
   const activePcode =
     normalizedActive.length === 1
@@ -68,15 +69,17 @@ export function PortfolioMobileMenu({
           (!darkTopBar ? " bg-[#EDE7E3]" : "")
         }
       >
-        <button
-          type="button"
-          onClick={onOpen}
-          className={`hamburger-mobile inline-flex items-center gap-2 py-1.5 text-xs font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900 ${topBarClass}`}
-          aria-label="Open navigation menu"
-        >
-          <FiMenu className="h-4 w-4" />
-          <span>Menu</span>
-        </button>
+        {hasProjectNav && (
+          <button
+            type="button"
+            onClick={onOpen}
+            className={`hamburger-mobile inline-flex items-center gap-2 py-1.5 text-xs font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900 ${topBarClass}`}
+            aria-label="Open navigation menu"
+          >
+            <FiMenu className="h-4 w-4" />
+            <span>Menu</span>
+          </button>
+        )}
         <a
           href="/docs/antonio-ruiz-portfolio-architecture.pdf"
           download
@@ -88,7 +91,7 @@ export function PortfolioMobileMenu({
         </a>
       </div>
 
-      {isOpen && (
+      {isOpen && hasProjectNav && (
         <div className="fixed inset-0 z-50 bg-[#0C1222] bg-black/50 lg:hidden">
           <div className="portfolio-grid-overlay" aria-hidden />
           <div className="relative z-10 flex flex-col h-full">

@@ -1,5 +1,4 @@
 import Link from "next/link";
-import Script from "next/script";
 import { PortfolioPageAnimations } from "./PortfolioPageAnimations";
 import { getProjects } from "@/lib/strapiProjects";
 import { RetryButton } from "@/components/RetryButton";
@@ -123,49 +122,6 @@ export default async function Portfolio() {
         </div>
         </div>
       </PortfolioPageAnimations>
-      <Script
-        id="portfolio-typewriter"
-        strategy="afterInteractive"
-        dangerouslySetInnerHTML={{
-          __html: `
-          (function () {
-            var el = document.querySelector('[data-typewriter-text]');
-            if (!el) return;
-            var phrases = [
-              "arkitekturportefølje",
-              "computation i arkitektur",
-              "architecture portfolio",
-              "computation in architecture",
-              "portafolio de arquitectura",
-              "computación en arquitectura"
-            ];
-            var index = 0;
-            var text = "";
-            var isDeleting = false;
-            function tick() {
-              var current = phrases[index];
-              if (!isDeleting && text === current) {
-                setTimeout(function () {
-                  isDeleting = true;
-                  tick();
-                }, 900);
-                return;
-              }
-              if (isDeleting && text === "") {
-                isDeleting = false;
-                index = (index + 1) % phrases.length;
-              }
-              text = isDeleting
-                ? current.slice(0, text.length - 1)
-                : current.slice(0, text.length + 1);
-              el.textContent = text;
-              setTimeout(tick, isDeleting ? 60 : 100);
-            }
-            tick();
-          })();
-        `,
-        }}
-      />
     </div>
   );
 }

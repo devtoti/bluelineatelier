@@ -39,14 +39,14 @@ export function PortfolioPageAnimations({
           opacity: 0,
           y: 8,
           duration: 2.0,
-          delay: 2.5,
+          delay: 1,
           ease: "power2.out",
         });
         gsap.from(headings.querySelector(".space-y-2"), {
           opacity: 0,
           y: 8,
           duration: 2.0,
-          delay: 1.5,
+          delay: 0.5,
           ease: "power2.out",
         });
       }
@@ -59,7 +59,7 @@ export function PortfolioPageAnimations({
             opacity: 1,
             x: 0,
             duration: 1.0,
-            delay: 4.5,
+            delay: 2.5,
             ease: "power2.out",
             onComplete: () => {
               gsap.to(chevronRight, {
