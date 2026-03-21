@@ -21,7 +21,7 @@ export function DetailsAccordion({
   const headerTitle =
     titleSlot ??
     (title != null ? (
-      <span className="pb-0 text-base font-bold uppercase tracking-[0.15em]">
+      <span className="pb-0 font-bold uppercase tracking-[0.15em]">
         {title}
       </span>
     ) : null);
@@ -31,7 +31,7 @@ export function DetailsAccordion({
       <button
         type="button"
         onClick={() => setOpen((prev) => !prev)}
-        className="flex w-full py-4 px-2 flex-row items-center gap-0 ml-auto bg-black/5 justify-between flex-wrap text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2B4673] focus-visible:ring-offset-2 rounded text-[#2B4673]"
+        className="flex w-full py-2 px-2 flex-row items-center gap-0 ml-auto bg-black/5 justify-between flex-wrap text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2B4673] focus-visible:ring-offset-2 rounded text-[#2B4673]"
         aria-expanded={open}
         aria-controls="details-accordion-content"
         id="details-accordion-trigger"

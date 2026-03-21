@@ -102,7 +102,7 @@ function Card({ pcode, name, summary, domain, thumbnailUrl, href }: CardProps) {
               src={thumbnailUrl}
               alt=""
               fill
-              className="object-contain object-center h-3/5 transition-transform scale-80 transition-opacity duration-400 opacity-50 group-hover:opacity-100 group-hover:scale-90 mix-blend-multiply"
+              className="object-contain object-center h-3/5 transition-transform scale-80 transition-opacity duration-400 opacity-75 group-hover:opacity-100 group-hover:scale-90 mix-blend-multiply"
               sizes="(max-width: 640px) 60vw, (max-width: 1024px) 30vw, 20vw"
             />
           </div>
@@ -124,7 +124,7 @@ function Card({ pcode, name, summary, domain, thumbnailUrl, href }: CardProps) {
           {domain}
         </span>
         {summary ? (
-          <p className="mt-2 line-clamp-4 flex-1 h-32 text-xs text-zinc-600">
+          <p className="mt-2 line-clamp-4 flex-1 h-32 text-xs text-zinc-400">
             {summary}
           </p>
         ) : null}

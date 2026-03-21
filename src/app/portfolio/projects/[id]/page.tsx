@@ -48,14 +48,16 @@ const EntryText = ({
   title,
   text,
   children,
+  className = "",
 }: {
   title: string | undefined;
   text: string | undefined;
   children?: ReactNode;
+  className?: string;
 }) => {
   return (
-    <dl className="entry text-[#2B4673] ">
-      <p className="pb-2 text-[#2B4673] font-bold uppercase tracking-[0.15em]">
+    <dl className={`entry text-[#2B4673] ${className}`}>
+      <p className="text-[#2B4673] font-bold uppercase tracking-[0.15em]">
         {title}
       </p>
       <span className="text-sm font-normal flex items-center">
@@ -331,18 +333,11 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
         )}
       </header>
 
-      <section id="gallery" className="mt-8">
-        <ImageCarousel
-          items={carouselItems}
-          width={1200}
-          height={800}
-          className=""
-          fallbackSrc={PLACEHOLDER_IMAGE}
-        />
-      </section>
+      <article className="flex flex-col gap-2">
+
       {proj.domain === "architecture" && (
         <section id="details">
-          <DetailsAccordion titleSlot={<EntryText title="Details" text="" />}>
+          <DetailsAccordion titleSlot={<EntryText title="Project Details" className="text-[0.7rem] pb-0 mb-0" text="" />}>
             <EntryText
               title="Location"
               text={
@@ -420,6 +415,15 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
           </DetailsAccordion>
         </section>
       )}
+
+        <RenderPhotos
+          photos={photos}
+          nameContains="cover"
+          title=""
+          altFallback="Cover Image"
+          fallbackSrc={PLACEHOLDER_IMAGE}
+        />
+        </article>
       <section id="overview" className="mt-10">
         <When
           ok={hasContent(proj.description) && hasContent(overview?.context)}
@@ -475,6 +479,17 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
                     p.url.length > 0 &&
                     p.name?.toLowerCase()?.includes("sketches"),
                 )
+                .sort((a, b) => {
+                  const getNum = (name: string | undefined) => {
+                    if (!name) return 0;
+                    const match = name.match(/sketches-(\d+)/i);
+                    return match ? parseInt(match[1], 10) : 0;
+                  };
+                  const aNum = getNum(a.name);
+                  const bNum = getNum(b.name);
+                  if (aNum !== bNum) return aNum - bNum;
+                  return String(a.name).localeCompare(String(b.name));
+                })
                 .map((sketch, idx) => (
                   <div key={sketch.url ?? idx}>
                     <ImageWithCaption
@@ -595,6 +610,15 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
             </ol>
           </div>
         )}
+      </section>
+<section id="gallery" className="mt-8">
+        <ImageCarousel
+          items={carouselItems}
+          width={1200}
+          height={800}
+          className=""
+          fallbackSrc={PLACEHOLDER_IMAGE}
+        />
       </section>
       {tagsList.length > 0 && (
         <div className="mt-2">

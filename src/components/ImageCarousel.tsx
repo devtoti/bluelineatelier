@@ -120,7 +120,7 @@ function CarouselImage({
       alt={item.alt}
       width={width}
       height={height}
-      className="max-h-full max-w-full object-contain"
+      className="max-h-full max-w-full object-cover"
       style={{
         width: "auto",
         height: "auto",
@@ -130,7 +130,7 @@ function CarouselImage({
         mixBlendMode: "multiply",
       }}
       priority={priority}
-      sizes="(max-width: 768px) 100vw, 640px"
+      // sizes="(max-width: 768px) 100vw, 640px"
       onError={() => setSrc(fallbackSrc)}
     />
   );

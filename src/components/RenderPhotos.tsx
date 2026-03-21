@@ -102,7 +102,7 @@ export function RenderPhotos({
   return (
     <PhotoProvider loop={items.length} maskClosable pullClosable>
       <style dangerouslySetInnerHTML={{ __html: photoViewBeigeBackdrop }} />
-      <article className="mt-10">
+      <article className="">
         {title != null && title !== "" && (
           <h3 className="text-base font-bold uppercase tracking-[0.15em] text-[#2B4673] mb-2">
             {title}
