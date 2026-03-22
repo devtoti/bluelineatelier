@@ -8,7 +8,8 @@ const ARCHITECT_CV_URL = "/docs/antonio-ruiz-architect-cv.pdf";
 const FRONTEND_CV_URL = "/docs/antonio-ruiz-frontend-cv.pdf";
 
 export type PortfolioMobileMenuProps = {
-  items: ProjectNavigationItem[];
+  /** `undefined` = still loading; `null` = this layout does not fetch nav; `[]` = fetch failed or empty */
+  items: ProjectNavigationItem[] | null | undefined;
   activeId: string;
   darkTopBar?: boolean;
   isOpen: boolean;
@@ -24,7 +25,11 @@ export function PortfolioMobileMenu({
   onClose,
   onOpen,
 }: PortfolioMobileMenuProps) {
-  const hasProjectNav = Array.isArray(items) && items.length > 0;
+  const isLoadingNav = items === undefined;
+  const hasProjectNav =
+    items === undefined ||
+    (Array.isArray(items) && items.length > 0);
+  const list = items ?? [];
   const normalizedActive = activeId.replace(/^0+/, "") || "0";
   const activePcode =
     normalizedActive.length === 1
@@ -120,7 +125,12 @@ export function PortfolioMobileMenu({
                   "/portfolio",
                   activeId === "cover",
                 )}
-                {items
+                {isLoadingNav && (
+                  <p className="px-3 py-2 text-sm text-zinc-500">
+                    Loading projects…
+                  </p>
+                )}
+                {list
                   .filter(({ id }) => id === "00")
                   .map(({ id, name, href }) => {
                     const linkHref = href ?? "/portfolio/00";
@@ -134,7 +144,7 @@ export function PortfolioMobileMenu({
                     );
                   })}
                 <div className="border border-dashed border-[#53A4D7] py-2 my-2 px-2 space-y-4">
-                  {items
+                  {list
                     .filter(({ id }) =>
                       ["01", "02", "03", "04", "05", "06"].includes(id),
                     )

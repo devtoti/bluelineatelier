@@ -15,7 +15,7 @@ import {
 } from "@/app/portfolio/actions";
 import type { ProjectLayoutData } from "@/app/portfolio/actions";
 import type { ProjectNavigationItem } from "@/components/ProjectNavigation";
-const PROJECT_ID_REGEX = /^\/portfolio\/projects\/(01|02|03|04|05|06)$/;
+const PROJECT_ID_REGEX = /^\/portfolio\/projects\/(\d{1,2})$/;
 const IS_ROUTE_00 = (path: string | null) => path === "/portfolio/00";
 
 export function PortfolioLayoutClient({
@@ -27,9 +27,9 @@ export function PortfolioLayoutClient({
   const [layoutData, setLayoutData] = useState<
     ProjectLayoutData | null | undefined
   >(undefined);
-  const [navItems00, setNavItems00] = useState<ProjectNavigationItem[] | null>(
-    null,
-  );
+  const [navItems00, setNavItems00] = useState<
+    ProjectNavigationItem[] | null | undefined
+  >(undefined);
 
   const isProjectPage = pathname?.match(PROJECT_ID_REGEX);
   const projectId = isProjectPage ? (pathname?.split("/").pop() ?? null) : null;
@@ -60,16 +60,19 @@ export function PortfolioLayoutClient({
       return () => cancelAnimationFrame(id);
     }
 
+    const loadingFrame = requestAnimationFrame(() => setNavItems00(undefined));
     let cancelled = false;
     getPortfolioNavItems().then((items) => {
       if (!cancelled) setNavItems00(items);
     });
     return () => {
       cancelled = true;
+      cancelAnimationFrame(loadingFrame);
     };
   }, [isRoute00, pathname]);
 
-  const showNavOnFallback = isRoute00 && navItems00 !== null;
+  const showNavOnFallback =
+    isRoute00 && Array.isArray(navItems00) && navItems00.length > 0;
 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -84,7 +87,10 @@ export function PortfolioLayoutClient({
     pathname === "/portfolio/contact";
 
   if (isProjectPage) {
-    const navItems = layoutData?.projectNavItems ?? [];
+    const navItems =
+      layoutData === undefined
+        ? undefined
+        : (layoutData?.projectNavItems ?? []);
     const pageSections = layoutData?.pageSections ?? [];
     const activeId = layoutData?.activeId ?? projectId ?? "";
 
@@ -111,7 +117,7 @@ export function PortfolioLayoutClient({
               aria-label="Project index"
             >
               <div className="row-start-1 row-end-2 pb-6 pl-2">
-                {navItems.length > 0 ? (
+                {Array.isArray(navItems) && navItems.length > 0 ? (
                   <ProjectNavigation items={navItems} activeId={activeId} />
                 ) : (
                   <div
@@ -159,7 +165,7 @@ export function PortfolioLayoutClient({
   return (
     <>
       <PortfolioMobileMenu
-        items={navItems00 ?? []}
+        items={navItems00 === null ? null : navItems00}
         activeId={coverContactActiveId}
         darkTopBar={isCoverOrContact}
         isOpen={isMobileMenuOpen}
