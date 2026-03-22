@@ -32,7 +32,7 @@ export function ClientRootLayout({
         className="border-t border-zinc-800 bg-[#0C1222] px-6 py-4 text-center text-sm text-zinc-500"
         role="contentinfo"
       >
-        <p>
+        <p suppressHydrationWarning>
           © {new Date().getFullYear()}{" "}
           <Link
             href="/"

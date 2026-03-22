@@ -18,13 +18,12 @@ export function buildPageSections(proj: Record<string, unknown>): PageContentIte
   );
 
   const sections: (PageContentItem | false)[] = [
-    hasGallery && { id: "gallery", label: "Gallery" },
-    proj.domain === "architecture" && {
-      id: "details",
-      label: "Details",
-    },
+    // proj.domain === "architecture" && {
+    //   id: "details",
+    //   label: "Details",
+    // },
     hasContent(proj.description) &&
-      hasContent(overview?.context) && { id: "overview", label: "Overview" },
+    hasContent(overview?.context) && { id: "overview", label: "Overview" },
     hasContent(overview?.challenges) && {
       id: "challenges",
       label: "Challenges",
@@ -36,6 +35,7 @@ export function buildPageSections(proj: Record<string, unknown>): PageContentIte
     hasContent(overview?.approach) && { id: "approach", label: "Approach" },
     hasContent(overview?.results) && { id: "results", label: "Results" },
     keyStages ? { id: "project-timeline", label: "Project timeline" } : false,
+    hasGallery && { id: "gallery", label: "Gallery" },
   ];
   return sections.filter((s): s is PageContentItem => Boolean(s));
 }

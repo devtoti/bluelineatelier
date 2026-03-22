@@ -15,13 +15,15 @@ function getTimeLeft(endDate: Date) {
   return { days, hours, minutes, seconds };
 }
 
+const ZERO = { days: 0, hours: 0, minutes: 0, seconds: 0 };
+
 function useCountdown(targetDate: Date) {
-  const [timeLeft, setTimeLeft] = useState(() => getTimeLeft(targetDate));
+  const [timeLeft, setTimeLeft] = useState(ZERO);
 
   useEffect(() => {
-    const timer = setInterval(() => {
-      setTimeLeft(getTimeLeft(targetDate));
-    }, 1000);
+    const tick = () => setTimeLeft(getTimeLeft(targetDate));
+    tick();
+    const timer = setInterval(tick, 1000);
     return () => clearInterval(timer);
   }, [targetDate]);
 

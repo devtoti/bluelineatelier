@@ -9,12 +9,12 @@ import { RenderPhotos } from "@/components/RenderPhotos";
 import { ImageCarousel } from "../../../../components/ImageCarousel";
 import { ImageWithCaption } from "@/components/ImageWithCaption";
 import { RetryButton } from "@/components/RetryButton";
+import { fetchStrapiProjects, fetchStrapiProjectById } from "@/lib/fetchStrapiProjects";
 import {
-  getProjects,
+  strapiProjectPcodeSlug,
   findProjectByPcode,
   type StrapiProjectNode,
 } from "@/lib/strapiProjects";
-
 type ProjectPageProps = {
   params: Promise<{ id: string }>;
 };
@@ -93,16 +93,37 @@ function ShowWhenText({
   if (!hasContent(value)) return null;
   return <>{children(String(value).trim())}</>;
 }
+const PLACEHOLDER_IMAGE = "/imgs/placeholder.jpg";
 
-function normalizePcode(code: string): string {
+export const revalidate = 60
+
+export async function generateStaticParams() {
+  try {
+    const projects = await fetchStrapiProjects();
+    const data = Array.isArray(projects?.data) ? projects.data : [];
+    return data
+      .map((project: StrapiProjectNode) => ({
+        id: strapiProjectPcodeSlug(project),
+      }))
+      .filter((p: { id: string }) => p.id.length > 0 && p.id !== "00");
+  } catch {
+    return [];
+  }
+}
+const normalizePcode = (code: string): string => {
   const n = code.replace(/^0+/, "") || "0";
   return n.length === 1 ? `0${n}` : n.padStart(2, "0");
-}
+};
 
-const PLACEHOLDER_IMAGE = "/imgs/placeholder.jpg";
+function strapiProjectDataAsList(data: unknown): StrapiProjectNode[] {
+  if (Array.isArray(data)) return data as StrapiProjectNode[];
+  if (data != null && typeof data === "object") return [data as StrapiProjectNode];
+  return [];
+}
 export default async function ProjectPage({ params }: ProjectPageProps) {
   const { id } = await params;
   const normalizedId = normalizePcode(id);
+  const project = await fetchStrapiProjectById(normalizedId);
 
   if (normalizedId === "00") {
     redirect("/portfolio/00");
@@ -112,21 +133,7 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
     redirect("/portfolio/contact");
   }
 
-  let data: StrapiProjectNode[] | null = null;
-  let projectsFetchErrorMessage: string | null = null;
-  try {
-    const res = await getProjects();
-    data = res.data ?? [];
-  } catch (err) {
-    console.error("Strapi fetch failed:", err);
-    projectsFetchErrorMessage =
-      err instanceof Error ? err.message : String(err);
-  }
-
-  // Cold start UX:
-  // If Strapi is currently failing and we have no last-good snapshot yet,
-  // show a retry option instead of falling into `notFound()`.
-  if (!data) {
+  if (!project) {
     const pdfUrl = "/docs/antonio-ruiz-portfolio-architecture.pdf";
 
     return (
@@ -136,25 +143,23 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
             className="font-heading text-xl lg:text-3xl font-bold mb-2"
             style={{ color: "#53A4D7" }}
           >
-            project-{normalizedId}
+            project-{id}
             <span style={{ color: "#BB2EB5" }}> ( )</span>
           </h1>
 
           <div className="rounded border border-amber-500/50 bg-amber-950/20 p-4 text-amber-200">
-            <p className="font-medium">Projects could not be loaded</p>
+            <p className="font-medium">Project could not be loaded</p>
             <p className="mt-1 text-sm text-zinc-400">
               Strapi may be temporarily unavailable (e.g. 503). Please try
               again in a moment.
             </p>
 
-            {projectsFetchErrorMessage && (
-              <p className="mt-2 text-xs text-zinc-500 font-mono">
-                {projectsFetchErrorMessage}
-              </p>
-            )}
-
             <div className="mt-4 w-full flex flex-col gap-3 sm:flex-row sm:items-center">
-              <RetryButton label="Retry" className="rounded border border-zinc-500 bg-zinc-900 px-4 py-2 text-sm font-medium text-zinc-200 transition-colors hover:border-zinc-400 hover:bg-zinc-800 text-center" />
+              <RetryButton
+                hardReload
+                label="Retry"
+                className="rounded border border-zinc-500 bg-zinc-900 px-4 py-2 text-sm font-medium text-zinc-200 transition-colors hover:border-zinc-400 hover:bg-zinc-800 text-center disabled:opacity-60"
+              />
               <a
                 href={pdfUrl}
                 className="rounded border border-zinc-500 bg-zinc-900 px-4 py-2 text-sm font-medium text-zinc-200 transition-colors hover:border-zinc-400 hover:bg-zinc-800 text-center"
@@ -174,7 +179,7 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
     (v, i, a) => a.indexOf(v) === i,
   );
   const projectNode = findProjectByPcode(
-    Array.isArray(data) ? data : [],
+    strapiProjectDataAsList(project?.data),
     pcodeVariants,
   );
   const attrs =
@@ -199,7 +204,6 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
     caption?: string;
   };
 
-  /** Normalize Strapi media relation (data[].attributes or array) to PhotoItem[]. Handles multiple response shapes. */
   function normalizeProjectPhotos(raw: unknown): PhotoItem[] {
     if (raw == null) return [];
     const withData = raw as { data?: unknown[] };
@@ -370,13 +374,13 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
             {site?.area != null ? (
               <EntryText
                 title="Site Area"
-                text={`${Number(site.area).toLocaleString()} m²`}
+                text={`${Number(site.area).toLocaleString("en-US")} m²`}
               />
             ) : null}
             {interventionData?.area != null ? (
               <EntryText
                 title="Intervention Area"
-                text={`${Number(interventionData.area).toLocaleString()} m²`}
+                text={`${Number(interventionData.area).toLocaleString("en-US")} m²`}
               />
             ) : null}
 
@@ -611,7 +615,27 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
           </div>
         )}
       </section>
+  {tagsList.length > 0 && (
+    <div className="mt-2">
+      <div className="flex flex-wrap gap-1 md:gap-2">
+        {String(tagsRaw ?? "")
+          .split("\n")
+          .map((tag: string) => (
+            <span
+              key={tag}
+              className="inline-flex items-center rounded-full border border-[#2B4673]/30 bg-gray-200  italic px-2 md:px-4 h-6 md:h-8 py-2 text-[0.6rem] md:text-[0.7rem] font-semibold text-[#4c6c9e] transition-colors"
+            >
+              {tag}
+            </span>
+          ))}
+      </div>
+    </div>
+  )}
 <section id="gallery" className="mt-8">
+<hr className="border-zinc-500 my-4" />
+<p className="text-[#2B4673] font-bold uppercase tracking-[0.15em] mb-4">
+        Gallery
+      </p>
         <ImageCarousel
           items={carouselItems}
           width={1200}
@@ -620,22 +644,6 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
           fallbackSrc={PLACEHOLDER_IMAGE}
         />
       </section>
-      {tagsList.length > 0 && (
-        <div className="mt-2">
-          <div className="flex flex-wrap gap-1 md:gap-2">
-            {String(tagsRaw ?? "")
-              .split("\n")
-              .map((tag: string) => (
-                <span
-                  key={tag}
-                  className="inline-flex items-center rounded-full border border-[#2B4673]/30 bg-gray-200  italic px-2 md:px-4 h-6 md:h-8 py-2 text-[0.6rem] md:text-[0.7rem] font-semibold text-[#4c6c9e] transition-colors"
-                >
-                  {tag}
-                </span>
-              ))}
-          </div>
-        </div>
-      )}
       <ProjectMobileNav currentProjectCode={normalizedId} />
     </article>
   );

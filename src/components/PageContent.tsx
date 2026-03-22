@@ -1,10 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import type { MouseEvent } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 
 const PROJECT_INFO_ID = "project-info";
 const SCROLL_TOP_THRESHOLD = 24;
+const ACTIVATION_LINE_OFFSET_PX = 96;
 
 export type PageContentItem = {
   id: string;
@@ -31,83 +33,89 @@ export function PageContent({
   const [activeId, setActiveId] = useState<string | null>(PROJECT_INFO_ID);
 
   const scrollToTop = () => {
+    setActiveId(PROJECT_INFO_ID);
     const el = getScrollContainer();
     if (el) el.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  useEffect(() => {
-    const scrollContainer = getScrollContainer();
+  const updateActiveFromScrollPosition = useCallback(() => {
+    const root = getScrollContainer();
+    if (!root) return;
 
-    const updateActiveFromScroll = () => {
-      if (!scrollContainer) return;
-      const { scrollTop, clientHeight, scrollHeight } = scrollContainer;
-      if (scrollTop < SCROLL_TOP_THRESHOLD) {
+    const { scrollTop, clientHeight, scrollHeight } = root;
+
+    if (scrollTop < SCROLL_TOP_THRESHOLD) {
+      setActiveId(PROJECT_INFO_ID);
+      return;
+    }
+
+    if (
+      sections.length > 0 &&
+      scrollTop + clientHeight >= scrollHeight - SCROLL_TOP_THRESHOLD
+    ) {
+      setActiveId(sections[sections.length - 1]!.id);
+      return;
+    }
+
+    const markerY = root.getBoundingClientRect().top + ACTIVATION_LINE_OFFSET_PX;
+    let active = sections[0]?.id ?? PROJECT_INFO_ID;
+    for (const { id } of sections) {
+      const el = document.getElementById(id);
+      if (!el) continue;
+      if (el.getBoundingClientRect().top <= markerY) {
+        active = id;
+      }
+    }
+    setActiveId(active);
+  }, [sections]);
+
+  useEffect(() => {
+    const root = getScrollContainer();
+    if (!root) return;
+
+    root.addEventListener("scroll", updateActiveFromScrollPosition, {
+      passive: true,
+    });
+    window.addEventListener("resize", updateActiveFromScrollPosition);
+
+    const ro = new ResizeObserver(() => updateActiveFromScrollPosition());
+    ro.observe(root);
+
+    const id = requestAnimationFrame(() => updateActiveFromScrollPosition());
+
+    return () => {
+      cancelAnimationFrame(id);
+      root.removeEventListener("scroll", updateActiveFromScrollPosition);
+      window.removeEventListener("resize", updateActiveFromScrollPosition);
+      ro.disconnect();
+    };
+  }, [updateActiveFromScrollPosition]);
+
+  useEffect(() => {
+    const onHashChange = () => {
+      const raw = window.location.hash.replace(/^#/, "");
+      if (!raw) {
         setActiveId(PROJECT_INFO_ID);
         return;
       }
-      const atBottom =
-        scrollTop + clientHeight >= scrollHeight - SCROLL_TOP_THRESHOLD;
-      if (atBottom && sections.length > 0) {
-        const lastId = sections[sections.length - 1]?.id ?? null;
-        if (lastId) setActiveId(lastId);
+      if (sections.some((s) => s.id === raw)) {
+        setActiveId(raw);
       }
     };
-
-    const observer =
-      sections.length > 0
-        ? new IntersectionObserver(
-            (entries) => {
-              if (scrollContainer) {
-                const { scrollTop, clientHeight, scrollHeight } =
-                  scrollContainer;
-                if (scrollTop < SCROLL_TOP_THRESHOLD) {
-                  setActiveId(PROJECT_INFO_ID);
-                  return;
-                }
-                const atBottom =
-                  scrollTop + clientHeight >=
-                  scrollHeight - SCROLL_TOP_THRESHOLD;
-                if (atBottom) {
-                  const lastId = sections[sections.length - 1]?.id ?? null;
-                  if (lastId) {
-                    setActiveId(lastId);
-                    return;
-                  }
-                }
-              }
-              for (const entry of entries) {
-                if (entry.isIntersecting) {
-                  setActiveId(entry.target.id);
-                  break;
-                }
-              }
-            },
-            {
-              rootMargin: "-80px 0px -66% 0px",
-              threshold: 0,
-            },
-          )
-        : null;
-
-    if (observer) {
-      sections.forEach(({ id }) => {
-        const el = document.getElementById(id);
-        if (el) observer.observe(el);
-      });
-    }
-
-    if (scrollContainer) {
-      scrollContainer.addEventListener("scroll", updateActiveFromScroll, {
-        passive: true,
-      });
-      updateActiveFromScroll();
-    }
-
-    return () => {
-      observer?.disconnect();
-      scrollContainer?.removeEventListener("scroll", updateActiveFromScroll);
-    };
+    window.addEventListener("hashchange", onHashChange);
+    return () => window.removeEventListener("hashchange", onHashChange);
   }, [sections]);
+
+  const onSectionLinkClick = (id: string) => (e: MouseEvent<HTMLAnchorElement>) => {
+    e.preventDefault();
+    setActiveId(id);
+    document.getElementById(id)?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+    window.history.replaceState(null, "", `#${id}`);
+    requestAnimationFrame(() => updateActiveFromScrollPosition());
+  };
 
   const linkClass = (id: string) =>
     `block py-0.5 transition-colors hover:text-[#2B4673] ${
@@ -136,7 +144,11 @@ export function PageContent({
         </li>
         {sections.map(({ id, label }) => (
           <li key={id} className={liClass(id)}>
-            <Link href={`#${id}`} className={linkClass(id)}>
+            <Link
+              href={`#${id}`}
+              className={linkClass(id)}
+              onClick={onSectionLinkClick(id)}
+            >
               {label}
             </Link>
           </li>

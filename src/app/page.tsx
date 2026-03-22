@@ -34,39 +34,10 @@ export default function Home() {
                 <span className="absolute inset-0 flex items-center justify-center w-full h-full">
                   <span className="relative flex items-center justify-center w-full h-full">
                     {/* Outer circle grows and fades smoothly from center with infinite repeat */}
-                    <span
-                      className="absolute bg-orange-500 rounded-full opacity-70 pointer-events-none"
-                      style={{
-                        animation:
-                          "c-grow-repeat 2.5s cubic-bezier(0.45,0,0.55,1) infinite",
-                        width: "1.25rem",
-                        height: "1.25rem",
-                      }}
-                    />
-                    {/* Inner dot remains centered */}
-                    <span className="relative bg-orange-300 w-3 h-3 rounded-full z-10 pointer-events-none" />
+                    <span className="home-site-progress-outer absolute rounded-full bg-orange-500 opacity-70 pointer-events-none" />
+                    <span className="relative z-10 h-3 w-3 rounded-full bg-orange-300 pointer-events-none" />
                   </span>
                 </span>
-                <style jsx>{`
-                  @keyframes c-grow-repeat {
-                    0% {
-                      transform: scale(0.42);
-                      opacity: 0.3;
-                    }
-                    45% {
-                      transform: scale(1);
-                      opacity: 0.7;
-                    }
-                    85% {
-                      transform: scale(1.3);
-                      opacity: 0;
-                    }
-                    100% {
-                      transform: scale(0.42);
-                      opacity: 0;
-                    }
-                  }
-                `}</style>
               </span>
               <span className="text-sm font-medium text-amber-600 w-full select-none pl-1 pr-2">
                 Site in progress

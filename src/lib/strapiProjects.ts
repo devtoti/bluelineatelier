@@ -1,45 +1,42 @@
-import { revalidatePath, revalidateTag } from "next/cache";
-
 export type StrapiProjectsResponse = {
   data: StrapiProjectNode[];
 };
 
 export type StrapiProjectNode = {
   id?: number;
+  documentId?: string;
   attributes?: Record<string, unknown>;
   [key: string]: unknown;
 };
 
-/**
- * Fetcher for all projects from Strapi (populate=*).
- *
- * UX goal:
- * - Keep serving the last successful snapshot when Strapi is temporarily failing (e.g. 503).
- * - Persist the snapshot across cold starts via Next.js/Vercel data cache.
- * - Refresh the snapshot only every ~8 hours (default, configurable).
- *
- * Note:
- * - We still keep an in-memory snapshot per Vercel instance for extra resilience.
- * - The underlying `fetch` uses Vercel's persistent data cache, so cold starts can often be served
- *   without contacting Strapi.
- */
-const PROJECTS_IN_MEMORY_SNAPSHOT_TTL_MS = 45 * 60 * 1000; // optimization for the same instance
+export function toTwoDigitPcode(value: string | number | undefined): string {
+  if (value == null) return "00";
+  const s = String(value).replace(/^0+/, "") || "0";
+  return s.length === 1 ? `0${s}` : s.padStart(2, "0");
+}
 
-const PROJECTS_STRAPI_FETCH_REVALIDATE_SECONDS =
-  Number(process.env.STRAPI_PROJECTS_REVALIDATE_SECONDS ?? 8 * 60 * 60); // 8h default
+export function strapiProjectPcodeSlug(node: StrapiProjectNode): string {
+  const attrs = node.attributes ?? (node as Record<string, unknown>);
+  const raw = attrs?.pcode ?? attrs?.code ?? node.id;
+  if (typeof raw === "string" || typeof raw === "number") {
+    return toTwoDigitPcode(raw);
+  }
+  return toTwoDigitPcode(undefined);
+}
 
-const STRAPI_PROJECTS_CACHE_TAG = "strapi-projects";
+const PROJECTS_IN_MEMORY_SNAPSHOT_TTL_MS = 45 * 60 * 1000;
+
+/** Use on `fetch(..., { next: { revalidate } })` and `export const revalidate` for portfolio pages that list projects. */
+export const STRAPI_PROJECTS_CACHE_TAG = "strapi-projects";
 const STRAPI_PROJECTS_DEBUG_CACHE =
   process.env.STRAPI_PROJECTS_DEBUG_CACHE === "true";
 
 let lastGoodProjects: StrapiProjectsResponse | null = null;
 let lastGoodAtMs = 0;
 
-// Single-flight refresh (prevents stampedes within a single instance).
 let refreshInFlight: Promise<StrapiProjectsResponse> | null = null;
 
 function getStrapiBaseUrl(): string {
-  // Set baseUrl based on NODE_ENV
   const isAccessingProductionStrapi = false;
   if (isAccessingProductionStrapi || process.env.NODE_ENV === "production") {
     return String(process.env.NEXT_PUBLIC_STRAPI_URL);
@@ -62,12 +59,9 @@ async function fetchProjectsFromStrapi(): Promise<StrapiProjectsResponse> {
 
   const t0 = Date.now();
   const res = await fetch(`${baseUrl}/api/projects?populate=*`, {
-    // Persist the last successful response across cold starts.
-    // Vercel will serve cached data and only revalidate after the given TTL.
     cache: "force-cache",
     next: {
-      revalidate: PROJECTS_STRAPI_FETCH_REVALIDATE_SECONDS,
-      // Allows `revalidatePortfolioPaths()` to force-refresh the persistent snapshot immediately.
+      revalidate: 3600,
       tags: [STRAPI_PROJECTS_CACHE_TAG],
     },
     headers: {
@@ -88,7 +82,6 @@ async function fetchProjectsFromStrapi(): Promise<StrapiProjectsResponse> {
   }
 
   if (!res.ok) {
-    // Preserve status code so caller can show a meaningful retry UI.
     throw new Error(`Strapi returned ${res.status}`);
   }
 
@@ -124,7 +117,6 @@ function startProjectsRefresh(): Promise<StrapiProjectsResponse> {
       }
       throw err;
     } finally {
-      // Ensure single-flight is cleared even on errors.
       refreshInFlight = null;
     }
   })();
@@ -132,10 +124,16 @@ function startProjectsRefresh(): Promise<StrapiProjectsResponse> {
   return refreshInFlight;
 }
 
+/** Clears the per-instance snapshot so the next `getProjects()` hits Strapi again. */
+export function clearStrapiProjectsMemoryCache(): void {
+  lastGoodProjects = null;
+  lastGoodAtMs = 0;
+  refreshInFlight = null;
+}
+
 export async function getProjects(): Promise<StrapiProjectsResponse> {
   const now = Date.now();
 
-  // 1) Serve fresh snapshot.
   if (
     lastGoodProjects &&
     now - lastGoodAtMs >= 0 &&
@@ -144,38 +142,15 @@ export async function getProjects(): Promise<StrapiProjectsResponse> {
     return lastGoodProjects;
   }
 
-  // 2) If we have *any* snapshot, keep serving it while we attempt refresh.
   if (lastGoodProjects) {
     try {
-      // Attempt a refresh once the snapshot is stale. If Strapi is failing,
-      // fall back to the last known good snapshot for this request.
       return await startProjectsRefresh();
     } catch {
       return lastGoodProjects;
     }
   }
 
-  // 3) Cold start: no snapshot yet. Caller must handle failure (retry UI).
   return startProjectsRefresh();
-}
-
-/**
- * Manually revalidate all portfolio-related pages that depend on Strapi data.
- * Call this from a Server Action or Route Handler after Strapi content changes.
- */
-export async function revalidatePortfolioPaths() {
-  // Clear the in-memory snapshot so the next request re-fetches from Strapi.
-  lastGoodProjects = null;
-  lastGoodAtMs = 0;
-  refreshInFlight = null;
-
-  // Invalidate the persistent (cross-instance) cache for this Strapi response.
-  revalidateTag(STRAPI_PROJECTS_CACHE_TAG, "max");
-
-  revalidatePath("/portfolio");
-  revalidatePath("/portfolio/00");
-  revalidatePath("/portfolio/contact");
-  revalidatePath("/portfolio/projects/[id]");
 }
 
 function pcodeFromNode(node: StrapiProjectNode): string {
@@ -186,10 +161,6 @@ function pcodeFromNode(node: StrapiProjectNode): string {
   return s.length === 1 ? `0${s}` : s.padStart(2, "0");
 }
 
-/**
- * Find a single project by normalized pcode from the pre-fetched list.
- * Accepts both "01" and "1" style ids via pcodeVariants.
- */
 export function findProjectByPcode(
   data: StrapiProjectNode[],
   pcodeVariants: string[],

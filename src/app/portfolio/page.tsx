@@ -1,15 +1,7 @@
 import Link from "next/link";
 import { PortfolioPageAnimations } from "./PortfolioPageAnimations";
-import { getProjects } from "@/lib/strapiProjects";
 
 export default async function Portfolio() {
-  // Warm the Strapi snapshot so subsequent routes load faster.
-  // The cover itself does not depend on projects; failure should not render
-  // an error UI on every cold start.
-  getProjects().catch(() => {
-    /* ignore warm-up failures */
-  });
-
   return (
     <div className="front-cover relative min-h-[100svh] h-svh max-h-svh w-full min-w-0 max-w-full font-sans overflow-hidden">
       <PortfolioPageAnimations>
@@ -106,7 +98,6 @@ export default async function Portfolio() {
               </svg>
             </a>
           </div>
-          {/* Intentionally no error UI here; other routes (e.g. /portfolio/00, /portfolio/projects/[id]) handle it. */}
         </div>
         </div>
       </PortfolioPageAnimations>

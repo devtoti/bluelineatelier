@@ -33,7 +33,6 @@ export function PortfolioTypewriterClient() {
         return;
       }
 
-      // Reset before starting so returning to the route always restarts.
       el.textContent = "";
 
       let index = 0;

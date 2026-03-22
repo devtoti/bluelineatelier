@@ -1,5 +1,5 @@
 import { PortfolioLayoutClient } from "@/app/portfolio/PortfolioLayoutClient";
-import { Analytics } from "@vercel/analytics/next"
+import { Analytics } from "@vercel/analytics/next";
 import { PortfolioTypewriterClient } from "@/app/portfolio/PortfolioTypewriterClient";
 
 export default function PortfolioLayout({

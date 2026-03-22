@@ -1,8 +1,11 @@
 "use server";
 
+import { revalidateTag } from "next/cache";
 import {
   getProjects,
   findProjectByPcode,
+  STRAPI_PROJECTS_CACHE_TAG,
+  clearStrapiProjectsMemoryCache,
   type StrapiProjectNode,
 } from "@/lib/strapiProjects";
 import { buildProjectNavItems, type ProjectNavItem } from "@/lib/portfolioNav";
@@ -63,4 +66,9 @@ export async function getPortfolioNavItems(): Promise<ProjectNavItem[]> {
   } catch {
     return [];
   }
+}
+
+export async function forceRefreshStrapiProjects(): Promise<void> {
+  clearStrapiProjectsMemoryCache();
+  revalidateTag(STRAPI_PROJECTS_CACHE_TAG, "max");
 }

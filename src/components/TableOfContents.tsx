@@ -4,27 +4,21 @@ import Link from "next/link";
 import Image from "next/image";
 import { useEffect, useRef } from "react";
 import gsap from "gsap";
-import type {
-  StrapiProjectsResponse,
-  StrapiProjectNode,
+import {
+  strapiProjectPcodeSlug,
+  type StrapiProjectsResponse,
+  type StrapiProjectNode,
 } from "@/lib/strapiProjects";
 import { getStrapiMedia } from "@/utils/getStrapiMedia";
 
 const FALLBACK_IMAGE = "/imgs/placeholder.jpg";
 const FALLBACK_IMAGE_ALT = "No image";
 
-function toTwoDigitPcode(value: string | number | undefined): string {
-  if (value == null) return "00";
-  const s = String(value).replace(/^0+/, "") || "0";
-  return s.length === 1 ? `0${s}` : s.padStart(2, "0");
-}
-
 type PhotoItem = {
   name?: string;
   url?: string;
 };
 
-/** Normalize Strapi media relation (data[].attributes) or flat array to PhotoItem[]. */
 function normalizeProjectPhotos(photos: unknown): PhotoItem[] {
   if (Array.isArray(photos)) {
     const first = photos[0];
@@ -128,9 +122,6 @@ function Card({ pcode, name, summary, domain, thumbnailUrl, href }: CardProps) {
             {summary}
           </p>
         ) : null}
-        {/* <p className="mt-3 text-xs font-regular uppercase tracking-widest text-[#53A4D7] opacity-80">
-          View project →
-        </p> */}
       </div>
     </Link>
   );
@@ -147,29 +138,24 @@ export function TableOfContents({
 }: TableOfContentsProps) {
   const sectionRef = useRef<HTMLElement>(null);
 
-  // Put all projects in "itemsByPcode", mapping pcode -> project
   const itemsByPcode: Record<string, StrapiProjectNode> = {};
   if (Array.isArray(projects?.data)) {
     for (const project of projects.data) {
-      const attrs = project.attributes ?? (project as Record<string, unknown>);
-      // Guarantee two-digit string for pcode, fallback to id if missing
-      const rawPcode = attrs?.pcode ?? attrs?.code ?? project.id;
-      const pcode = toTwoDigitPcode(
-        typeof rawPcode === "string" || typeof rawPcode === "number"
-          ? rawPcode
-          : undefined,
-      );
-      if (["01", "02", "03", "04", "05", "06"].includes(pcode)) {
-        itemsByPcode[pcode] = project;
+      const slug = strapiProjectPcodeSlug(project);
+      const n = Number.parseInt(slug, 10);
+      if (!Number.isNaN(n) && n >= 1 && n <= 99) {
+        const key = String(n).padStart(2, "0");
+        itemsByPcode[key] = project;
       }
     }
   }
 
-  // Always order by explicit "01"-"06"
-  const orderedPcodes = ["01", "02", "03", "04", "05", "06"];
-  const items: StrapiProjectNode[] = orderedPcodes
-    .map((pcode) => itemsByPcode[pcode])
-    .filter(Boolean);
+  const items: StrapiProjectNode[] = [];
+  for (let i = 1; i <= 99; i += 1) {
+    const key = String(i).padStart(2, "0");
+    const node = itemsByPcode[key];
+    if (node) items.push(node);
+  }
 
   useEffect(() => {
     if (!sectionRef.current) return;
@@ -194,7 +180,7 @@ export function TableOfContents({
     }, sectionRef);
 
     return () => ctx.revert();
-  }, []);
+  }, [items.length]);
 
   return (
     <>
@@ -212,12 +198,7 @@ export function TableOfContents({
         {items.map((project) => {
           const attrs =
             project.attributes ?? (project as Record<string, unknown>);
-          const rawPcode = attrs?.pcode ?? attrs?.code ?? project.id;
-          const pcode = toTwoDigitPcode(
-            typeof rawPcode === "string" || typeof rawPcode === "number"
-              ? rawPcode
-              : undefined,
-          );
+          const pcode = strapiProjectPcodeSlug(project);
           const name =
             String(attrs?.name ?? attrs?.title ?? `Project ${pcode}`).trim() ||
             `Project ${pcode}`;

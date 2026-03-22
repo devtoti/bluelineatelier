@@ -1,27 +1,24 @@
-import { getProjects, type StrapiProjectsResponse } from "@/lib/strapiProjects";
 import { TableOfContents } from "@/components/TableOfContents";
 import { RetryButton } from "@/components/RetryButton";
+import {
+  getProjects,
+  type StrapiProjectNode,
+} from "@/lib/strapiProjects";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 3600;
 
 export default async function TableOfContentsZeroPage() {
-  let projectsData: StrapiProjectsResponse | null = null;
-  let fetchError: Error | null = null;
+  let projects: StrapiProjectNode[];
+
   try {
-    projectsData = await getProjects();
-  } catch {
-    // Strapi can be temporarily unavailable during cold starts.
-    // Retry once so we don't permanently render the error state.
-    try {
-      projectsData = await getProjects();
-      fetchError = null;
-    } catch (err2) {
-      console.error("Strapi fetch failed:", err2);
-      fetchError = err2 instanceof Error ? err2 : new Error(String(err2));
-    }
+    const response = await getProjects();
+    projects = response.data ?? [];
+  } catch (error) {
+    console.error("Failed to fetch projects:", error);
+    projects = [];
   }
 
-  if (fetchError || !projectsData) {
+  if (projects.length === 0) {
     return (
       <div className="back-cover relative min-h-[100svh] w-full font-sans overflow-hidden">
         <div className="relative z-10 mx-auto min-h-svh max-w-5xl px-6 py-12">
@@ -38,16 +35,12 @@ export default async function TableOfContentsZeroPage() {
               Strapi may be temporarily unavailable (e.g. 503). Please try again
               in a moment.
             </p>
-            {fetchError?.message && (
-              <p className="mt-2 text-xs text-zinc-500 font-mono">
-                {fetchError.message}
-              </p>
-            )}
-          <div className="mt-4 flex flex-row gap-3">
+            <div className="mt-4 flex flex-row gap-3">
               <div className="flex-1">
                 <RetryButton
+                  hardReload
                   label="Refresh Page"
-                  className="w-full rounded border border-zinc-500 bg-zinc-900 px-4 py-2 text-sm font-medium text-zinc-200 transition-colors hover:border-zinc-400 hover:bg-zinc-800 text-center"
+                  className="w-full rounded border border-zinc-500 bg-zinc-900 px-4 py-2 text-sm font-medium text-zinc-200 transition-colors hover:border-zinc-400 hover:bg-zinc-800 text-center disabled:opacity-60"
                 />
               </div>
               <div className="flex-1">
@@ -81,7 +74,7 @@ export default async function TableOfContentsZeroPage() {
             "// A collection of architectural, programming, and design projects."
           }
         </p>
-        <TableOfContents projects={projectsData} />
+        <TableOfContents projects={{ data: projects as StrapiProjectNode[] }} />
       </div>
     </div>
   );
