@@ -3,6 +3,7 @@ import {
   type StrapiProjectNode,
   type StrapiProjectsResponse,
 } from "@/lib/__strapiProjects";
+import { REVALIDATE_MS } from "@/lib/revalidate";
 
 function getStrapiBaseUrl(): string {
   const isAccessingProductionStrapi = false;
@@ -45,7 +46,7 @@ export async function fetchStrapiProjects(): Promise<StrapiProjectsResponse> {
     const res = await fetch(`${baseUrl}/api/projects?populate=*`, {
       cache: "force-cache",
       next: {
-        revalidate: 120,
+        revalidate: REVALIDATE_MS,
         tags: [STRAPI_PROJECTS_CACHE_TAG],
       },
       headers: {
@@ -112,7 +113,7 @@ export async function fetchStrapiProjectByDocumentId(
         },
         cache: "force-cache",
         next: {
-          revalidate: 120,
+          revalidate: REVALIDATE_MS,
           tags: [STRAPI_PROJECTS_CACHE_TAG],
         },
       },

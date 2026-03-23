@@ -6,10 +6,32 @@ import { fetchTocProjects } from "@/app/portfolio/actions";
 import type { StrapiProjectNode } from "@/lib/__strapiProjects";
 
 const RETRY_DELAY_MS = 10_000;
+const STORAGE_KEY = "blueline-portfolio-00-projects";
 
 const shellClass =
   "back-cover relative min-h-[100svh] w-full font-sans overflow-hidden";
 const innerClass = "relative z-10 mx-auto min-h-svh max-w-5xl px-6 py-12";
+
+function readCached(): StrapiProjectNode[] | null {
+  try {
+    const raw = sessionStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    const p = JSON.parse(raw) as unknown;
+    if (!Array.isArray(p) || p.length === 0) return null;
+    return p as StrapiProjectNode[];
+  } catch {
+    return null;
+  }
+}
+
+function writeCached(data: StrapiProjectNode[]) {
+  if (data.length === 0) return;
+  try {
+    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  } catch {
+    /* quota */
+  }
+}
 
 function Spinner({ label }: { label: string }) {
   return (
@@ -43,20 +65,39 @@ export function TocProjectsShell({
     if (data.length > 0) {
       setProjects(data);
       setPhase("ready");
+      writeCached(data);
       return true;
     }
     return false;
   }, []);
 
   useEffect(() => {
-    if (initialList.length > 0) return;
+    if (initialList.length > 0) {
+      queueMicrotask(() => {
+        setProjects(initialList);
+        setPhase("ready");
+        writeCached(initialList);
+      });
+      return;
+    }
+
+    const cached = readCached();
+    if (cached) {
+      queueMicrotask(() => {
+        setProjects(cached);
+        setPhase("ready");
+      });
+      return;
+    }
+
     const t = setTimeout(() => {
-      void (async () => {
-        const ok = await tryLoad();
+      void tryLoad().then((ok) => {
         if (!ok) setPhase("failed");
-      })();
+      });
     }, RETRY_DELAY_MS);
     return () => clearTimeout(t);
+    // Only re-run when server list size changes (avoid resetting timer on new [] reference).
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional: use latest initialList when length > 0
   }, [initialList.length, tryLoad]);
 
   const handleManualRetry = async () => {

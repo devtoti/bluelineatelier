@@ -1,3 +1,5 @@
+import { REVALIDATE_MS } from "./revalidate";
+
 export type StrapiProjectsResponse = {
   data: StrapiProjectNode[];
 };
@@ -26,7 +28,7 @@ export function strapiProjectPcodeSlug(node: StrapiProjectNode): string {
 
 const PROJECTS_IN_MEMORY_SNAPSHOT_TTL_MS = 45 * 60 * 1000;
 
-/** Use on `fetch(..., { next: { revalidate } })` and `export const revalidate` for portfolio pages that list projects. */
+/** Use with `REVALIDATE_MS` on `fetch(..., { next: { revalidate } })` and `export const revalidate` for portfolio pages that list projects. */
 export const STRAPI_PROJECTS_CACHE_TAG = "strapi-projects";
 const STRAPI_PROJECTS_DEBUG_CACHE =
   process.env.STRAPI_PROJECTS_DEBUG_CACHE === "true";
@@ -61,7 +63,7 @@ async function fetchProjectsFromStrapi(): Promise<StrapiProjectsResponse> {
   const res = await fetch(`${baseUrl}/api/projects?populate=*`, {
     cache: "force-cache",
     next: {
-      revalidate: 120,
+      revalidate: REVALIDATE_MS,
       tags: [STRAPI_PROJECTS_CACHE_TAG],
     },
     headers: {
