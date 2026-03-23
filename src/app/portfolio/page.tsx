@@ -1,11 +1,13 @@
 import Link from "next/link";
 import { PortfolioPageAnimations } from "./PortfolioPageAnimations";
+import { PortfolioTypewriterClient } from "./PortfolioTypewriterClient";
 
 export default async function Portfolio() {
   return (
     <div className="front-cover relative min-h-[100svh] h-svh max-h-svh w-full min-w-0 max-w-full font-sans overflow-hidden">
       <PortfolioPageAnimations>
-        <div className="relative text-zinc-300 z-10 sm:px-0 md:px-8 md:py-12 flex flex-col items-start justify-center min-h-svh">
+     
+      <div className="relative text-zinc-300 z-10 sm:px-0 md:px-8 md:py-12 flex flex-col items-start justify-center min-h-svh">
         <div className="headings w-full md:max-w-85 group p-6 hover:bg-black/10 relative flex flex-col items-start justify-between">
           <span className="bracket top-0 left-0 absolute w-4 h-4 border-t-[1px] border-l-[1px] border-white/50 opacity-0 transition-colors duration-400 group-hover:border-white/50 group-hover:opacity-100"></span>
           <span className="bracket top-0 right-0 absolute w-4 h-4 border-t-[1px] border-r-[1px] border-white/50 opacity-0 transition-colors duration-400 group-hover:border-white/50 group-hover:opacity-100"></span>
@@ -99,7 +101,10 @@ export default async function Portfolio() {
             </a>
           </div>
         </div>
+     
+        
         </div>
+        <PortfolioTypewriterClient />
       </PortfolioPageAnimations>
     </div>
   );

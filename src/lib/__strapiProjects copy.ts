@@ -61,7 +61,7 @@ async function fetchProjectsFromStrapi(): Promise<StrapiProjectsResponse> {
   const res = await fetch(`${baseUrl}/api/projects?populate=*`, {
     cache: "force-cache",
     next: {
-      revalidate: 3600,
+      revalidate: 120,
       tags: [STRAPI_PROJECTS_CACHE_TAG],
     },
     headers: {

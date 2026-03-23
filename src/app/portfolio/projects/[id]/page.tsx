@@ -9,12 +9,20 @@ import { RenderPhotos } from "@/components/RenderPhotos";
 import { ImageCarousel } from "../../../../components/ImageCarousel";
 import { ImageWithCaption } from "@/components/ImageWithCaption";
 import { RetryButton } from "@/components/RetryButton";
-import { fetchStrapiProjects, fetchStrapiProjectById } from "@/lib/fetchStrapiProjects";
+
 import {
-  strapiProjectPcodeSlug,
   findProjectByPcode,
+  strapiProjectPcodeSlug,
   type StrapiProjectNode,
-} from "@/lib/strapiProjects";
+} from "@/lib/__strapiProjects";
+import {
+  fetchStrapiProjectByDocumentId,
+  fetchStrapiProjects,
+} from "@/lib/__fetchStrapiProjects";
+import { ProjectLayout } from "@/app/portfolio/ProjectLayout";
+import { buildProjectNavItems } from "@/lib/__portfolioNav";
+import { buildPageSections } from "@/lib/__projectPageSections";
+
 type ProjectPageProps = {
   params: Promise<{ id: string }>;
 };
@@ -72,44 +80,11 @@ function hasContent(value: unknown): boolean {
   return value != null && String(value).trim() !== "";
 }
 
-function When({
-  ok,
-  children,
-}: {
-  ok: boolean;
-  children: ReactNode;
-}): ReactNode {
-  if (!ok) return null;
-  return <>{children}</>;
-}
-
-function ShowWhenText({
-  value,
-  children,
-}: {
-  value: unknown;
-  children: (text: string) => ReactNode;
-}): ReactNode {
-  if (!hasContent(value)) return null;
-  return <>{children(String(value).trim())}</>;
-}
 const PLACEHOLDER_IMAGE = "/imgs/placeholder.jpg";
 
-export const revalidate = 60
+export const revalidate = 60;
 
-export async function generateStaticParams() {
-  try {
-    const projects = await fetchStrapiProjects();
-    const data = Array.isArray(projects?.data) ? projects.data : [];
-    return data
-      .map((project: StrapiProjectNode) => ({
-        id: strapiProjectPcodeSlug(project),
-      }))
-      .filter((p: { id: string }) => p.id.length > 0 && p.id !== "00");
-  } catch {
-    return [];
-  }
-}
+
 const normalizePcode = (code: string): string => {
   const n = code.replace(/^0+/, "") || "0";
   return n.length === 1 ? `0${n}` : n.padStart(2, "0");
@@ -117,13 +92,35 @@ const normalizePcode = (code: string): string => {
 
 function strapiProjectDataAsList(data: unknown): StrapiProjectNode[] {
   if (Array.isArray(data)) return data as StrapiProjectNode[];
-  if (data != null && typeof data === "object") return [data as StrapiProjectNode];
+  if (data != null && typeof data === "object")
+    return [data as StrapiProjectNode];
   return [];
 }
+
+export async function generateStaticParams() {
+  try {
+    const res = await fetchStrapiProjects();
+    const data = res.data ?? [];
+    return data
+      .map((node) => {
+        const pcode = strapiProjectPcodeSlug(node);
+        const n = Number.parseInt(pcode, 10);
+        if (Number.isNaN(n) || n < 1 || n > 99) return null;
+        return { id: pcode };
+      })
+      .filter((x): x is { id: string } => x != null);
+  } catch (error) {
+    console.error(
+      "[generateStaticParams] /portfolio/projects/[id] failed to load project list from Strapi",
+      error,
+    );
+    return [];
+  }
+}
+
 export default async function ProjectPage({ params }: ProjectPageProps) {
   const { id } = await params;
   const normalizedId = normalizePcode(id);
-  const project = await fetchStrapiProjectById(normalizedId);
 
   if (normalizedId === "00") {
     redirect("/portfolio/00");
@@ -133,7 +130,31 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
     redirect("/portfolio/contact");
   }
 
-  if (!project) {
+  const altPcode = normalizedId.replace(/^0+/, "") || "0";
+  const pcodeVariants = [normalizedId, altPcode].filter(
+    (v, i, a) => a.indexOf(v) === i,
+  );
+
+  const listRes = await fetchStrapiProjects();
+  const listNode = findProjectByPcode(listRes.data ?? [], pcodeVariants);
+  if (!listNode) {
+    notFound();
+  }
+
+  const documentId =
+    typeof listNode.documentId === "string" && listNode.documentId.length > 0
+      ? listNode.documentId
+      : listNode.id != null
+        ? String(listNode.id)
+        : null;
+
+  if (!documentId) {
+    notFound();
+  }
+
+  const projectResponse = await fetchStrapiProjectByDocumentId(documentId);
+
+  if (!projectResponse?.data) {
     const pdfUrl = "/docs/antonio-ruiz-portfolio-architecture.pdf";
 
     return (
@@ -150,8 +171,8 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
           <div className="rounded border border-amber-500/50 bg-amber-950/20 p-4 text-amber-200">
             <p className="font-medium">Project could not be loaded</p>
             <p className="mt-1 text-sm text-zinc-400">
-              Strapi may be temporarily unavailable (e.g. 503). Please try
-              again in a moment.
+              Strapi may be temporarily unavailable (e.g. 503). Please try again
+              in a moment.
             </p>
 
             <div className="mt-4 w-full flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -174,12 +195,8 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
     );
   }
 
-  const altPcode = normalizedId.replace(/^0+/, "") || "0";
-  const pcodeVariants = [normalizedId, altPcode].filter(
-    (v, i, a) => a.indexOf(v) === i,
-  );
   const projectNode = findProjectByPcode(
-    strapiProjectDataAsList(project?.data),
+    strapiProjectDataAsList(projectResponse.data),
     pcodeVariants,
   );
   const attrs =
@@ -213,15 +230,30 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
         ? (raw as unknown[])
         : [];
     return arr.map((item) => {
-      const o = item && typeof item === "object" ? (item as Record<string, unknown>) : {};
+      const o =
+        item && typeof item === "object"
+          ? (item as Record<string, unknown>)
+          : {};
       const attrs = (o?.attributes ?? o) as Record<string, unknown>;
       return {
-        name: [attrs?.name, o?.name].find((v) => typeof v === "string") as string | undefined,
-        url: [attrs?.url, o?.url].find((v) => typeof v === "string") as string | undefined,
-        alt: [attrs?.alternativeText, attrs?.alt, o?.alternativeText].find((v) => typeof v === "string") as string | undefined,
-        alternativeText: [attrs?.alternativeText, attrs?.alt].find((v) => typeof v === "string") as string | undefined,
-        caption: [attrs?.caption, o?.caption].find((v) => typeof v === "string") as string | undefined,
-        description: [attrs?.description, o?.description].find((v) => typeof v === "string") as string | undefined,
+        name: [attrs?.name, o?.name].find((v) => typeof v === "string") as
+          | string
+          | undefined,
+        url: [attrs?.url, o?.url].find((v) => typeof v === "string") as
+          | string
+          | undefined,
+        alt: [attrs?.alternativeText, attrs?.alt, o?.alternativeText].find(
+          (v) => typeof v === "string",
+        ) as string | undefined,
+        alternativeText: [attrs?.alternativeText, attrs?.alt].find(
+          (v) => typeof v === "string",
+        ) as string | undefined,
+        caption: [attrs?.caption, o?.caption].find(
+          (v) => typeof v === "string",
+        ) as string | undefined,
+        description: [attrs?.description, o?.description].find(
+          (v) => typeof v === "string",
+        ) as string | undefined,
       };
     });
   }
@@ -322,7 +354,12 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
   )?.[0] as Record<string, unknown> | undefined;
 
   return (
-    <article className="scrollable-article mt-10 mx-auto max-w-2xl lg:max-w-4xl sm:mt-0 sm:pt-10 pt-4 px-4 md:px-6 sm:px-8 pb-12 relative bg-black/2 border-[1px] border-zinc-300 rounded-sm">
+    <ProjectLayout
+      navItems={buildProjectNavItems(listRes.data ?? [])}
+      pageSections={buildPageSections(proj)}
+      activeId={normalizedId}
+    >
+      <article className="scrollable-article bg-[#EDE7E3] mt-10 mx-auto max-w-2xl lg:max-w-4xl sm:mt-0 sm:pt-10 pt-4 px-4 md:px-6 sm:px-8 pb-12 relative border-[1px] border-zinc-300 rounded-sm z-10">
       <header className="border-b border-zinc-300 ">
         <p className="text-xs font-semibold uppercase tracking-[0.3em] opacity-70">
           {normalizedId} • {String(proj.domain ?? "").toUpperCase()}
@@ -338,87 +375,97 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
       </header>
 
       <article className="flex flex-col gap-2">
-
-      {proj.domain === "architecture" && (
-        <section id="details">
-          <DetailsAccordion titleSlot={<EntryText title="Project Details" className="text-[0.7rem] pb-0 mb-0" text="" />}>
-            <EntryText
-              title="Location"
-              text={
-                [String(site?.city ?? ""), String(site?.country ?? "")]
-                  .join(", ")
-                  .trim() || undefined
-              }
-            />
-            <EntryText
-              title="Project Site"
-              text={String(site?.location ?? "") || undefined}
-            >
-              {site?.latitude != null && site?.longitude != null && (
-                <OpenInMapsButton
-                  latitude={Number(site.latitude)}
-                  longitude={Number(site.longitude)}
+        {proj.domain === "architecture" && (
+          <section id="details">
+            <DetailsAccordion
+              titleSlot={
+                <EntryText
+                  title="Project Details"
+                  className="text-[0.7rem] pb-0 mb-0"
+                  text=""
                 />
-              )}
-            </EntryText>
-
-            <EntryText
-              title="Years"
-              text={
-                String(interventionData?.yearStarted ?? "") +
-                (interventionData?.yearCompleted != null
-                  ? ` – ${String(interventionData.yearCompleted)}`
-                  : " – Ongoing")
               }
-            />
-            {site?.area != null ? (
+            >
               <EntryText
-                title="Site Area"
-                text={`${Number(site.area).toLocaleString("en-US")} m²`}
+                title="Location"
+                text={
+                  [String(site?.city ?? ""), String(site?.country ?? "")]
+                    .join(", ")
+                    .trim() || undefined
+                }
               />
-            ) : null}
-            {interventionData?.area != null ? (
               <EntryText
-                title="Intervention Area"
-                text={`${Number(interventionData.area).toLocaleString("en-US")} m²`}
-              />
-            ) : null}
+                title="Project Site"
+                text={String(site?.location ?? "") || undefined}
+              >
+                {site?.latitude != null && site?.longitude != null && (
+                  <OpenInMapsButton
+                    latitude={Number(site.latitude)}
+                    longitude={Number(site.longitude)}
+                  />
+                )}
+              </EntryText>
 
-            {collaboratorsList.length > 0 ? (
               <EntryText
-                title="Collaborators"
-                text={collaboratorsList.join(" • ")}
+                title="Years"
+                text={
+                  String(interventionData?.yearStarted ?? "") +
+                  (interventionData?.yearCompleted != null
+                    ? ` – ${String(interventionData.yearCompleted)}`
+                    : " – Ongoing")
+                }
               />
-            ) : null}
+              {site?.area != null ? (
+                <EntryText
+                  title="Site Area"
+                  text={`${Number(site.area).toLocaleString("en-US")} m²`}
+                />
+              ) : null}
+              {interventionData?.area != null ? (
+                <EntryText
+                  title="Intervention Area"
+                  text={`${Number(interventionData.area).toLocaleString("en-US")} m²`}
+                />
+              ) : null}
 
-            {hasContent(interventionData?.materials) ? (
-              <EntryText
-                title="Materials"
-                text={String(interventionData?.materials)}
-              />
-            ) : null}
+              {collaboratorsList.length > 0 ? (
+                <EntryText
+                  title="Collaborators"
+                  text={collaboratorsList.join(" • ")}
+                />
+              ) : null}
 
-            {hasContent(interventionData?.styles) ? (
-              <EntryText
-                title="Styles"
-                text={String(interventionData?.styles)}
-              />
-            ) : null}
+              {hasContent(interventionData?.materials) ? (
+                <EntryText
+                  title="Materials"
+                  text={String(interventionData?.materials)}
+                />
+              ) : null}
 
-            {(() => {
-              const flags: string[] = [];
-              if (interventionData?.isRegenerative) flags.push("Regenerative");
-              if (interventionData?.isSustainable) flags.push("Sustainable");
-              if (interventionData?.usesRegionalMaterials)
-                flags.push("Regional Materials");
-              if (interventionData?.wasComputated) flags.push("Computated");
-              if (interventionData?.wasPrototyped) flags.push("Prototyped");
-              if (flags.length === 0) return null;
-              return <EntryText title="Attributes" text={flags.join(" • ")} />;
-            })()}
-          </DetailsAccordion>
-        </section>
-      )}
+              {hasContent(interventionData?.styles) ? (
+                <EntryText
+                  title="Styles"
+                  text={String(interventionData?.styles)}
+                />
+              ) : null}
+
+              {(() => {
+                const flags: string[] = [];
+                if (interventionData?.isRegenerative)
+                  flags.push("Regenerative");
+                if (interventionData?.isSustainable) flags.push("Sustainable");
+                if (interventionData?.usesRegionalMaterials)
+                  flags.push("Regional Materials");
+                if (interventionData?.wasComputated) flags.push("Computated");
+                if (interventionData?.wasPrototyped) flags.push("Prototyped");
+                if (flags.length === 0) return null;
+                return (
+                  <EntryText title="Attributes" text={flags.join(" • ")} />
+                );
+              })()}
+            </DetailsAccordion>
+          </section>
+        )}
 
         <RenderPhotos
           photos={photos}
@@ -427,39 +474,33 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
           altFallback="Cover Image"
           fallbackSrc={PLACEHOLDER_IMAGE}
         />
-        </article>
+      </article>
       <section id="overview" className="mt-10">
-        <When
-          ok={hasContent(proj.description) && hasContent(overview?.context)}
-        >
-          <CaptionText title="Overview" text={String(proj.description)} />
-          <br />
-          <CaptionText title="" text={String(overview?.context)} />
-        </When>
+        {hasContent(proj.description) && hasContent(overview?.context) && (
+          <div>
+            <CaptionText title="Overview" text={String(proj.description)} />
+            <br />
+            <CaptionText title="" text={String(overview?.context)} />
+          </div>
+        )}
       </section>
 
       <section className="mt-10 space-y-8 text-sm leading-relaxed sm:text-base">
-        <ShowWhenText value={overview?.challenges}>
-          {(text) => (
-            <div id="challenges">
-              <CaptionText title="Challenges" text={text} />
-            </div>
-          )}
-        </ShowWhenText>
-        <ShowWhenText value={overview?.objectives}>
-          {(text) => (
-            <div id="objectives">
-              <CaptionText title="Objectives" text={text} />
-            </div>
-          )}
-        </ShowWhenText>
-        <ShowWhenText value={overview?.approach}>
-          {(text) => (
+        {hasContent(overview?.challenges) && (
+          <div id="challenges">
+            <CaptionText title="Challenges" text={String(overview?.challenges)} />
+          </div>
+        )}
+        {hasContent(overview?.objectives) && (
+          <div id="objectives">
+            <CaptionText title="Objectives" text={String(overview?.objectives)} />
+          </div>
+        )}
+        {hasContent(overview?.approach) && (
             <div id="approach">
-              <CaptionText title="Approach" text={text} />
+              <CaptionText title="Approach" text={String(overview?.approach)} />
             </div>
           )}
-        </ShowWhenText>
 
         <RenderPhotos
           photos={photos}
@@ -553,36 +594,26 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
           fallbackSrc={PLACEHOLDER_IMAGE}
         />
 
-        <ShowWhenText value={overview?.results}>
-          {(text) => (
-            <div id="results">
-              <CaptionText title="Results" text={text} />
-            </div>
-          )}
-        </ShowWhenText>
-
-        <When
-          ok={
-            hasContent(overview?.learnings) || hasContent(overview?.nextSteps)
-          }
-        >
-          <div className="grid gap-8 sm:grid-cols-2">
-            <ShowWhenText value={overview?.learnings}>
-              {(text) => (
-                <div id="learnings">
-                  <CaptionText title="Learnings" text={text} />
-                </div>
-              )}
-            </ShowWhenText>
-            <ShowWhenText value={overview?.nextSteps}>
-              {(text) => (
-                <div id="next-steps">
-                  <CaptionText title="Next steps" text={text} />
-                </div>
-              )}
-            </ShowWhenText>
+        {hasContent(overview?.results) && (
+          <div id="results">
+            <CaptionText title="Results" text={String(overview?.results)} />
           </div>
-        </When>
+        )}
+
+        {hasContent(overview?.learnings) || hasContent(overview?.nextSteps) && (
+          <div className="grid gap-8 sm:grid-cols-2">
+            {hasContent(overview?.learnings) && (
+              <div id="learnings">
+                <CaptionText title="Learnings" text={String(overview?.learnings)} />
+              </div>
+            )}
+            {hasContent(overview?.nextSteps) && (
+              <div id="next-steps">
+                <CaptionText title="Next steps" text={String(overview?.nextSteps)} />
+              </div>
+            )}
+          </div>
+        )}
       </section>
 
       <section
@@ -615,27 +646,27 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
           </div>
         )}
       </section>
-  {tagsList.length > 0 && (
-    <div className="mt-2">
-      <div className="flex flex-wrap gap-1 md:gap-2">
-        {String(tagsRaw ?? "")
-          .split("\n")
-          .map((tag: string) => (
-            <span
-              key={tag}
-              className="inline-flex items-center rounded-full border border-[#2B4673]/30 bg-gray-200  italic px-2 md:px-4 h-6 md:h-8 py-2 text-[0.6rem] md:text-[0.7rem] font-semibold text-[#4c6c9e] transition-colors"
-            >
-              {tag}
-            </span>
-          ))}
-      </div>
-    </div>
-  )}
-<section id="gallery" className="mt-8">
-<hr className="border-zinc-500 my-4" />
-<p className="text-[#2B4673] font-bold uppercase tracking-[0.15em] mb-4">
-        Gallery
-      </p>
+      {tagsList.length > 0 && (
+        <div className="mt-2">
+          <div className="flex flex-wrap gap-1 md:gap-2">
+            {String(tagsRaw ?? "")
+              .split("\n")
+              .map((tag: string) => (
+                <span
+                  key={tag}
+                  className="inline-flex items-center rounded-full border border-[#2B4673]/30 bg-gray-200  italic px-2 md:px-4 h-6 md:h-8 py-2 text-[0.6rem] md:text-[0.7rem] font-semibold text-[#4c6c9e] transition-colors"
+                >
+                  {tag}
+                </span>
+              ))}
+          </div>
+        </div>
+      )}
+      <section id="gallery" className="mt-8">
+        <hr className="border-zinc-500 my-4" />
+        <p className="text-[#2B4673] font-bold uppercase tracking-[0.15em] mb-4">
+          Gallery
+        </p>
         <ImageCarousel
           items={carouselItems}
           width={1200}
@@ -646,5 +677,6 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
       </section>
       <ProjectMobileNav currentProjectCode={normalizedId} />
     </article>
+    </ProjectLayout>
   );
 }

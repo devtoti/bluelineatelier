@@ -1,6 +1,6 @@
 import "../../../projects.css";
-import { getProjects } from "@/lib/strapiProjects";
-import { buildProjectNavItems } from "@/lib/portfolioNav";
+import { getProjects } from "@/lib/__strapiProjects";
+import { buildProjectNavItems } from "@/lib/__portfolioNav";
 import { ProjectNavigation } from "@/components/ProjectNavigation";
 import { ContactInfo } from "@/components/ContactInfo";
 

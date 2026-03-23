@@ -2,7 +2,7 @@ import {
   STRAPI_PROJECTS_CACHE_TAG,
   type StrapiProjectNode,
   type StrapiProjectsResponse,
-} from "@/lib/strapiProjects";
+} from "@/lib/__strapiProjects";
 
 function getStrapiBaseUrl(): string {
   const isAccessingProductionStrapi = false;
@@ -45,7 +45,7 @@ export async function fetchStrapiProjects(): Promise<StrapiProjectsResponse> {
     const res = await fetch(`${baseUrl}/api/projects?populate=*`, {
       cache: "force-cache",
       next: {
-        revalidate: 3600,
+        revalidate: 120,
         tags: [STRAPI_PROJECTS_CACHE_TAG],
       },
       headers: {
@@ -88,6 +88,43 @@ async function fetchStrapiProjectByPcodeSegment(
     if (first != null) return { data: first };
   }
   return null;
+}
+
+/**
+ * Loads a single project by Strapi document id (or legacy numeric id).
+ * Always calls `GET /api/projects/:documentId` — use after resolving pcode → id from the list.
+ */
+export async function fetchStrapiProjectByDocumentId(
+  documentId: string,
+): Promise<{ data?: unknown } | null> {
+  try {
+    const baseUrl = getStrapiBaseUrl().replace(/\/$/, "");
+    if (!baseUrl) return null;
+
+    const apiToken = getStrapiApiToken();
+    if (!apiToken) return null;
+
+    const res = await fetch(
+      `${baseUrl}/api/projects/${encodeURIComponent(documentId)}?populate=*`,
+      {
+        headers: {
+          Authorization: `Bearer ${apiToken}`,
+        },
+        cache: "force-cache",
+        next: {
+          revalidate: 120,
+          tags: [STRAPI_PROJECTS_CACHE_TAG],
+        },
+      },
+    );
+    const text = await res.text();
+    const parsed = parseStrapiJson(text, res);
+    if (parsed != null) return parsed as { data?: unknown };
+    return null;
+  } catch (error) {
+    console.error("Failed to fetch project:", error);
+    return null;
+  }
 }
 
 export async function fetchStrapiProjectById(

@@ -6,9 +6,8 @@ import { useEffect, useRef } from "react";
 import gsap from "gsap";
 import {
   strapiProjectPcodeSlug,
-  type StrapiProjectsResponse,
   type StrapiProjectNode,
-} from "@/lib/strapiProjects";
+} from "@/lib/__strapiProjects";
 import { getStrapiMedia } from "@/utils/getStrapiMedia";
 
 const FALLBACK_IMAGE = "/imgs/placeholder.jpg";
@@ -72,7 +71,14 @@ type CardProps = {
   href: string;
 };
 
-function Card({ pcode, name, summary, domain, thumbnailUrl, href }: CardProps) {
+function Card({
+  pcode,
+  name,
+  summary,
+  domain,
+  thumbnailUrl,
+  href,
+}: CardProps) {
   return (
     <Link
       key={pcode}
@@ -128,7 +134,7 @@ function Card({ pcode, name, summary, domain, thumbnailUrl, href }: CardProps) {
 }
 
 export type TableOfContentsProps = {
-  projects: StrapiProjectsResponse;
+  projects: StrapiProjectNode[];
   className?: string;
 };
 
@@ -139,14 +145,12 @@ export function TableOfContents({
   const sectionRef = useRef<HTMLElement>(null);
 
   const itemsByPcode: Record<string, StrapiProjectNode> = {};
-  if (Array.isArray(projects?.data)) {
-    for (const project of projects.data) {
-      const slug = strapiProjectPcodeSlug(project);
-      const n = Number.parseInt(slug, 10);
-      if (!Number.isNaN(n) && n >= 1 && n <= 99) {
-        const key = String(n).padStart(2, "0");
-        itemsByPcode[key] = project;
-      }
+  for (const project of projects) {
+    const slug = strapiProjectPcodeSlug(project);
+    const n = Number.parseInt(slug, 10);
+    if (!Number.isNaN(n) && n >= 1 && n <= 99) {
+      const key = String(n).padStart(2, "0");
+      itemsByPcode[key] = project;
     }
   }
 
@@ -181,45 +185,56 @@ export function TableOfContents({
 
     return () => ctx.revert();
   }, [items.length]);
-
   return (
     <>
-      <style
+      {/* <style
         dangerouslySetInnerHTML={{
           __html:
             ".toc-card-link { cursor: pointer !important; } .toc-card-link:hover .toc-card-pcode { color: #FACF6A !important; }",
         }}
-      />
+      /> */}
+         <h1
+            className="font-heading text-xl lg:text-3xl font-bold mb-2"
+            style={{ color: "#53A4D7" }}
+          >
+            tableOfContents
+            <span style={{ color: "#BB2EB5" }}>( )</span>
+          </h1>
+          <p className="text-zinc-300 text-sm mb-10">
+            {
+              "// A collection of architectural, programming, and design projects."
+            }
+          </p>
       <section
         ref={sectionRef}
         aria-label="Table of Contents"
         className={`grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 items-stretch ${className}`}
       >
         {items.map((project) => {
-          const attrs =
-            project.attributes ?? (project as Record<string, unknown>);
-          const pcode = strapiProjectPcodeSlug(project);
-          const name =
-            String(attrs?.name ?? attrs?.title ?? `Project ${pcode}`).trim() ||
-            `Project ${pcode}`;
-          const summary =
-            String(attrs?.summary ?? attrs?.description ?? "").trim() || "";
-          const thumbnailUrl = getThumbnailUrl(project);
-          const href = `/portfolio/projects/${pcode}`;
-          const domain =
-            typeof attrs?.domain === "string" ? attrs.domain : "architecture";
-          return (
-            <Card
-              key={pcode}
-              pcode={pcode}
-              name={name}
-              summary={summary}
-              thumbnailUrl={thumbnailUrl}
-              href={href}
-              domain={domain}
-            />
-          );
-        })}
+            const attrs =
+              project.attributes ?? (project as Record<string, unknown>);
+            const pcode = strapiProjectPcodeSlug(project);
+            const name =
+              String(attrs?.name ?? attrs?.title ?? `Project ${pcode}`).trim() ||
+              `Project ${pcode}`;
+            const summary =
+              String(attrs?.summary ?? attrs?.description ?? "").trim() || "";
+            const thumbnailUrl = getThumbnailUrl(project);
+            const href = `/portfolio/projects/${pcode}`;
+            const domain =
+              typeof attrs?.domain === "string" ? attrs.domain : "architecture";
+            return (
+              <Card
+                key={pcode}
+                pcode={pcode}
+                name={name}
+                summary={summary}
+                thumbnailUrl={thumbnailUrl}
+                href={href}
+                domain={domain}
+              />
+            );
+          })}
       </section>
     </>
   );

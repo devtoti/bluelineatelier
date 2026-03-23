@@ -100,7 +100,7 @@ export function PortfolioMobileMenu({
         <div className="fixed inset-0 z-50 bg-[#0C1222] bg-black/50 lg:hidden">
           <div className="portfolio-grid-overlay" aria-hidden />
           <div className="relative z-10 flex flex-col h-full">
-            <div className="button absolute top-3 right-4">
+            <div className="button absolute bg-[#0C1222] top-3 right-4">
               <button
                 type="button"
                 onClick={onClose}
@@ -110,7 +110,8 @@ export function PortfolioMobileMenu({
                 <FiX className="h-5 w-5" />
               </button>
             </div>
-            <div className="floating-nav absolute inset-x-4 top-16  border border-white/30 bg-[#0C1222] p-8 shadow-xl">
+            <div className="floating-nav absolute w-full top-16  border border-white/30 bg-[#0C1222] p-8 shadow-xl">
+              <div className="projects-grid-overlay" aria-hidden />
               <span className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
                 {"// antonio ruiz - portfolio 2026"}
               </span>
@@ -124,11 +125,6 @@ export function PortfolioMobileMenu({
                   "Cover",
                   "/portfolio",
                   activeId === "cover",
-                )}
-                {isLoadingNav && (
-                  <p className="px-3 py-2 text-sm text-zinc-500">
-                    Loading projects…
-                  </p>
                 )}
                 {list
                   .filter(({ id }) => id === "00")
@@ -144,6 +140,17 @@ export function PortfolioMobileMenu({
                     );
                   })}
                 <div className="border border-dashed border-[#53A4D7] py-2 my-2 px-2 space-y-4">
+                  {isLoadingNav && (
+                    <div className="flex flex-row gap-4 justify-center items-center px-3 py-2">
+                      <span className="mt-2 flex items-center justify-center gap-2">
+                        <svg className="animate-spin h-4 w-4 text-zinc-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 16 16">
+                          <circle className="opacity-20" cx="8" cy="8" r="7" stroke="currentColor" strokeWidth="2" />
+                          <path className="opacity-70" fill="currentColor" d="M15 8A7 7 0 1 1 1 8a1 1 0 1 0 2 0 5 5 0 1 0 10 0 1 1 0 1 0 2 0z"/>
+                        </svg>
+                      <p className="text-sm text-zinc-500">Loading projects…</p>
+                      </span>
+                    </div>
+                  )}
                   {list
                     .filter(({ id }) =>
                       ["01", "02", "03", "04", "05", "06"].includes(id),

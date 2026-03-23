@@ -2,7 +2,7 @@ import Link from "next/link";
 import type {
   StrapiProjectsResponse,
   StrapiProjectNode,
-} from "@/lib/strapiProjects";
+} from "@/lib/__strapiProjects";
 
 function toTwoDigitPcode(value: string | number | undefined): string {
   if (value == null) return "00";
@@ -26,7 +26,8 @@ export default function Projects({
       </h2>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {items.slice(0, 6).map((project) => {
-          const attrs = project.attributes ?? (project as Record<string, unknown>);
+          const attrs =
+            project.attributes ?? (project as Record<string, unknown>);
           const rawPcode = attrs.pcode ?? attrs.code ?? project.id;
           const pcode = toTwoDigitPcode(
             typeof rawPcode === "string" || typeof rawPcode === "number"

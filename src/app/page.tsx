@@ -4,6 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 
 export default function Home() {
+ 
   return (
     <div
       className="relative min-h-screen font-sans"
@@ -14,20 +15,6 @@ export default function Home() {
 
       <div className="relative z-10 mx-auto flex min-h-screen w-full flex-col py-6">
         <main className="flex min-h-[calc(100vh-5rem)] flex-col items-center justify-center py-16 text-center">
-          {/* <div
-            style={{
-              position: "absolute",
-              inset: 0,
-              zIndex: -1,
-              pointerEvents: "none",
-              backgroundImage: 'url("/imgs/perspective.jpg")',
-              backgroundSize: "cover",
-              backgroundPosition: "center",
-              // filter: "invert(1)",
-              mixBlendMode: "luminosity",
-            }}
-            aria-hidden="true"
-          /> */}
           <article className="flex justify-center mt-4 w-50">
             <div className="flex items-center gap-2 rounded-full border border-amber-500/50 border-dashed px-4 py-1 w-auto shadow min-h-[2.5rem]">
               <span className="relative inline-block w-5 h-5">

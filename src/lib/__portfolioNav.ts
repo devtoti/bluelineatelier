@@ -1,7 +1,7 @@
 import {
   findProjectByPcode,
   type StrapiProjectNode,
-} from "@/lib/strapiProjects";
+} from "@/lib/__strapiProjects";
 
 export type ProjectNavItem = {
   id: string;

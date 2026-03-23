@@ -1,15 +1,16 @@
 "use server";
 
 import { revalidateTag } from "next/cache";
+import { fetchStrapiProjects } from "@/lib/__fetchStrapiProjects";
 import {
   getProjects,
   findProjectByPcode,
   STRAPI_PROJECTS_CACHE_TAG,
   clearStrapiProjectsMemoryCache,
   type StrapiProjectNode,
-} from "@/lib/strapiProjects";
-import { buildProjectNavItems, type ProjectNavItem } from "@/lib/portfolioNav";
-import { buildPageSections } from "@/lib/projectPageSections";
+} from "@/lib/__strapiProjects";
+import { buildProjectNavItems, type ProjectNavItem } from "@/lib/__portfolioNav";
+import { buildPageSections } from "@/lib/__projectPageSections";
 import type { PageContentItem } from "@/components/PageContent";
 
 function normalizePcode(code: string): string {
@@ -71,4 +72,10 @@ export async function getPortfolioNavItems(): Promise<ProjectNavItem[]> {
 export async function forceRefreshStrapiProjects(): Promise<void> {
   clearStrapiProjectsMemoryCache();
   revalidateTag(STRAPI_PROJECTS_CACHE_TAG, "max");
+}
+
+/** Safe list fetch for TOC / client retries (handles HTML error bodies). */
+export async function fetchTocProjects(): Promise<StrapiProjectNode[]> {
+  const res = await fetchStrapiProjects();
+  return Array.isArray(res.data) ? res.data : [];
 }
