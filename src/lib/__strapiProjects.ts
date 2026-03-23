@@ -28,7 +28,7 @@ export function strapiProjectPcodeSlug(node: StrapiProjectNode): string {
 
 const PROJECTS_IN_MEMORY_SNAPSHOT_TTL_MS = 45 * 60 * 1000;
 
-/** Use with `REVALIDATE_MS` on `fetch(..., { next: { revalidate } })` and `export const revalidate` for portfolio pages that list projects. */
+/** Use with `fetch(..., { next: { revalidate, tags } })` — portfolio list fetch uses `STRAPI_STATIC_REVALIDATE` from `@/lib/revalidate`; `getProjects()` still uses `REVALIDATE_MS`. */
 export const STRAPI_PROJECTS_CACHE_TAG = "strapi-projects";
 const STRAPI_PROJECTS_DEBUG_CACHE =
   process.env.STRAPI_PROJECTS_DEBUG_CACHE === "true";

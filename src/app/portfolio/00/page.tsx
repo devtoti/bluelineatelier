@@ -1,8 +1,8 @@
 import { getNewProjects } from "@/lib/getNewProjects";
 import { TocProjectsShell } from "./TocProjectsShell";
 
-/** Must match `REVALIDATE_MS` in `@/lib/revalidate` (Next requires a literal here). */
-export const revalidate = 3600;
+/** Static portfolio TOC — aligned with `/portfolio/projects/[id]` Strapi cache. */
+export const revalidate = false;
 
 export default async function TableOfContentsZeroPage() {
   const projects = await getNewProjects();

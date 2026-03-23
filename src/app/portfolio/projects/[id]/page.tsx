@@ -16,8 +16,9 @@ import {
   type StrapiProjectNode,
 } from "@/lib/__strapiProjects";
 import {
-  fetchStrapiProjectByDocumentId,
+  fetchStrapiProjectByPcode,
   fetchStrapiProjects,
+  fetchStrapiProjectsStrict,
 } from "@/lib/__fetchStrapiProjects";
 import { ProjectLayout } from "@/app/portfolio/ProjectLayout";
 import { buildProjectNavItems } from "@/lib/__portfolioNav";
@@ -82,8 +83,8 @@ function hasContent(value: unknown): boolean {
 
 const PLACEHOLDER_IMAGE = "/imgs/placeholder.jpg";
 
-/** Must match `REVALIDATE_MS` in `@/lib/revalidate` (Next requires a literal here). */
-export const revalidate = 3600;
+/** Static portfolio data — no time-based ISR (must match static Strapi fetch cache). */
+export const revalidate = false;
 
 const normalizePcode = (code: string): string => {
   const n = code.replace(/^0+/, "") || "0";
@@ -97,11 +98,22 @@ function strapiProjectDataAsList(data: unknown): StrapiProjectNode[] {
   return [];
 }
 
+function enforcePortfolioStaticParams(): boolean {
+  return (
+    process.env.NEXT_PHASE === "phase-production-build" ||
+    process.env.CI === "true"
+  );
+}
+
 export async function generateStaticParams() {
+  const strict = enforcePortfolioStaticParams();
+
   try {
-    const res = await fetchStrapiProjects();
+    const res = strict
+      ? await fetchStrapiProjectsStrict()
+      : await fetchStrapiProjects();
     const data = res.data ?? [];
-    return data
+    const params = data
       .map((node) => {
         const pcode = strapiProjectPcodeSlug(node);
         const n = Number.parseInt(pcode, 10);
@@ -109,7 +121,18 @@ export async function generateStaticParams() {
         return { id: pcode };
       })
       .filter((x): x is { id: string } => x != null);
+
+    if (strict && params.length === 0) {
+      throw new Error(
+        "[portfolio] No projects with pcode 1–99; fix Strapi data or filters before shipping",
+      );
+    }
+
+    return params;
   } catch (error) {
+    if (strict) {
+      throw error;
+    }
     console.error(
       "[generateStaticParams] /portfolio/projects/[id] failed to load project list from Strapi",
       error,
@@ -135,26 +158,16 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
     (v, i, a) => a.indexOf(v) === i,
   );
 
-  const listRes = await fetchStrapiProjects();
-  const listNode = findProjectByPcode(listRes.data ?? [], pcodeVariants);
-  if (!listNode) {
+  const [pcodeResult, listRes] = await Promise.all([
+    fetchStrapiProjectByPcode(pcodeVariants),
+    fetchStrapiProjects(),
+  ]);
+
+  if (pcodeResult.kind === "not_found") {
     notFound();
   }
 
-  const documentId =
-    typeof listNode.documentId === "string" && listNode.documentId.length > 0
-      ? listNode.documentId
-      : listNode.id != null
-        ? String(listNode.id)
-        : null;
-
-  if (!documentId) {
-    notFound();
-  }
-
-  const projectResponse = await fetchStrapiProjectByDocumentId(documentId);
-
-  if (!projectResponse?.data) {
+  if (pcodeResult.kind === "unavailable") {
     const pdfUrl = "/docs/antonio-ruiz-portfolio-architecture.pdf";
 
     return (
@@ -194,6 +207,8 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
       </div>
     );
   }
+
+  const projectResponse = { data: pcodeResult.node };
 
   const projectNode = findProjectByPcode(
     strapiProjectDataAsList(projectResponse.data),

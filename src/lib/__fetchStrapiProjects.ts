@@ -3,7 +3,7 @@ import {
   type StrapiProjectNode,
   type StrapiProjectsResponse,
 } from "@/lib/__strapiProjects";
-import { REVALIDATE_MS } from "@/lib/revalidate";
+import { STRAPI_STATIC_REVALIDATE } from "@/lib/revalidate";
 
 function getStrapiBaseUrl(): string {
   const isAccessingProductionStrapi = false;
@@ -35,60 +35,164 @@ function parseStrapiJson(text: string, res: Response): unknown | null {
   }
 }
 
+const strapiProjectsListCache = {
+  cache: "force-cache" as const,
+  next: {
+    revalidate: STRAPI_STATIC_REVALIDATE,
+    tags: [STRAPI_PROJECTS_CACHE_TAG],
+  },
+};
+
+async function fetchStrapiProjectsInternal(
+  strict: boolean,
+): Promise<StrapiProjectsResponse> {
+  const baseUrl = getStrapiBaseUrl().replace(/\/$/, "");
+  if (!baseUrl) {
+    if (strict) {
+      throw new Error(
+        "[portfolio] NEXT_PUBLIC_STRAPI_URL is required to pre-render project routes",
+      );
+    }
+    return { data: [] };
+  }
+
+  const apiToken = getStrapiApiToken();
+  if (!apiToken) {
+    if (strict) {
+      throw new Error(
+        "[portfolio] Strapi API token is required to pre-render project routes",
+      );
+    }
+    return { data: [] };
+  }
+
+  const res = await fetch(`${baseUrl}/api/projects?populate=*`, {
+    ...strapiProjectsListCache,
+    headers: {
+      Authorization: `Bearer ${apiToken}`,
+    },
+  });
+
+  const text = await res.text();
+  const parsed = parseStrapiJson(text, res);
+
+  if (!parsed || typeof parsed !== "object") {
+    if (strict) {
+      throw new Error(
+        `[portfolio] Strapi project list failed (${res.status}) or returned non-JSON`,
+      );
+    }
+    return { data: [] };
+  }
+
+  const data = (parsed as { data?: unknown }).data;
+  const arr = Array.isArray(data) ? (data as StrapiProjectNode[]) : [];
+
+  if (strict && arr.length === 0) {
+    throw new Error(
+      "[portfolio] Strapi returned zero projects; cannot pre-render /portfolio/projects/[id]",
+    );
+  }
+
+  return { data: arr };
+}
+
+/** Resilient list fetch for runtime; returns empty on failure. */
 export async function fetchStrapiProjects(): Promise<StrapiProjectsResponse> {
   try {
-    const baseUrl = getStrapiBaseUrl().replace(/\/$/, "");
-    if (!baseUrl) return { data: [] };
-
-    const apiToken = getStrapiApiToken();
-    if (!apiToken) return { data: [] };
-
-    const res = await fetch(`${baseUrl}/api/projects?populate=*`, {
-      cache: "force-cache",
-      next: {
-        revalidate: REVALIDATE_MS,
-        tags: [STRAPI_PROJECTS_CACHE_TAG],
-      },
-      headers: {
-        Authorization: `Bearer ${apiToken}`,
-      },
-    });
-
-    const text = await res.text();
-    const parsed = parseStrapiJson(text, res);
-    if (!parsed || typeof parsed !== "object") return { data: [] };
-
-    const data = (parsed as { data?: unknown }).data;
-    return {
-      data: Array.isArray(data) ? (data as StrapiProjectNode[]) : [],
-    };
+    return await fetchStrapiProjectsInternal(false);
   } catch {
     return { data: [] };
   }
 }
 
-async function fetchStrapiProjectByPcodeSegment(
-  baseUrl: string,
-  headers: HeadersInit,
-  segment: string,
-): Promise<unknown> {
-  const stripped = segment.replace(/^0+/, "") || "0";
-  const twoDigit =
-    stripped.length === 1 ? `0${stripped}` : stripped.padStart(2, "0");
-  const variants = [...new Set([segment, stripped, twoDigit])];
+/**
+ * Fails loudly — use from `generateStaticParams` when build must not ship without projects.
+ */
+export async function fetchStrapiProjectsStrict(): Promise<StrapiProjectsResponse> {
+  return fetchStrapiProjectsInternal(true);
+}
 
-  for (const v of variants) {
-    const url = `${baseUrl}/api/projects?populate=*&filters[pcode][$eq]=${encodeURIComponent(v)}`;
-    const res = await fetch(url, { headers });
-    const text = await res.text();
-    const parsed = parseStrapiJson(text, res);
-    if (!parsed || typeof parsed !== "object") continue;
-
-    const body = parsed as { data?: unknown[] };
-    const first = body?.data?.[0];
-    if (first != null) return { data: first };
+/** Unique pcode strings to try with Strapi `filters[pcode][$eq]` (order preserved). */
+function expandPcodeFilterValues(segments: string[]): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const segment of segments) {
+    const stripped = segment.replace(/^0+/, "") || "0";
+    const twoDigit =
+      stripped.length === 1 ? `0${stripped}` : stripped.padStart(2, "0");
+    for (const v of [segment, stripped, twoDigit]) {
+      if (!seen.has(v)) {
+        seen.add(v);
+        out.push(v);
+      }
+    }
   }
-  return null;
+  return out;
+}
+
+export type FetchStrapiProjectByPcodeResult =
+  | { kind: "project"; node: unknown }
+  | { kind: "not_found" }
+  | { kind: "unavailable" };
+
+/**
+ * Loads one project by pcode via `GET /api/projects?filters[pcode][$eq]=...&populate=*`.
+ * Does not depend on the full project list. Uses the same Data Cache / tags as other Strapi fetches.
+ */
+export async function fetchStrapiProjectByPcode(
+  pcodeVariants: string[],
+): Promise<FetchStrapiProjectByPcodeResult> {
+  try {
+    const baseUrl = getStrapiBaseUrl().replace(/\/$/, "");
+    if (!baseUrl) return { kind: "unavailable" };
+
+    const apiToken = getStrapiApiToken();
+    if (!apiToken) return { kind: "unavailable" };
+
+    const fetchOpts = {
+      cache: "force-cache" as const,
+      next: {
+        revalidate: STRAPI_STATIC_REVALIDATE,
+        tags: [STRAPI_PROJECTS_CACHE_TAG],
+      },
+      headers: {
+        Authorization: `Bearer ${apiToken}`,
+      },
+    };
+
+    let sawTransportOrParseFailure = false;
+
+    for (const v of expandPcodeFilterValues(pcodeVariants)) {
+      const url = `${baseUrl}/api/projects?populate=*&filters[pcode][$eq]=${encodeURIComponent(v)}`;
+      const res = await fetch(url, fetchOpts);
+      const text = await res.text();
+      const parsed = parseStrapiJson(text, res);
+
+      if (!parsed || typeof parsed !== "object") {
+        if (!res.ok || text.trimStart().startsWith("<")) {
+          sawTransportOrParseFailure = true;
+        }
+        continue;
+      }
+
+      const body = parsed as { data?: unknown[] };
+      const list = body?.data;
+      if (Array.isArray(list) && list.length === 0) {
+        continue;
+      }
+      if (Array.isArray(list) && list[0] != null) {
+        return { kind: "project", node: list[0] };
+      }
+    }
+
+    return sawTransportOrParseFailure
+      ? { kind: "unavailable" }
+      : { kind: "not_found" };
+  } catch (error) {
+    console.error("fetchStrapiProjectByPcode:", error);
+    return { kind: "unavailable" };
+  }
 }
 
 /**
@@ -113,7 +217,7 @@ export async function fetchStrapiProjectByDocumentId(
         },
         cache: "force-cache",
         next: {
-          revalidate: REVALIDATE_MS,
+          revalidate: STRAPI_STATIC_REVALIDATE,
           tags: [STRAPI_PROJECTS_CACHE_TAG],
         },
       },
@@ -143,13 +247,9 @@ export async function fetchStrapiProjectById(
     };
 
     if (isLikelyPcodeSlug(id)) {
-      const byPcode = await fetchStrapiProjectByPcodeSegment(
-        baseUrl,
-        headers,
-        id,
-      );
-      if (byPcode) return byPcode;
-      return null;
+      const byPcode = await fetchStrapiProjectByPcode([id]);
+      if (byPcode.kind === "project") return { data: byPcode.node };
+      if (byPcode.kind === "not_found") return null;
     }
 
     const res = await fetch(
@@ -161,12 +261,8 @@ export async function fetchStrapiProjectById(
     if (parsed != null) return parsed;
 
     if (res.status === 404) {
-      const byPcode = await fetchStrapiProjectByPcodeSegment(
-        baseUrl,
-        headers,
-        id,
-      );
-      if (byPcode) return byPcode;
+      const byPcode = await fetchStrapiProjectByPcode([id]);
+      if (byPcode.kind === "project") return { data: byPcode.node };
     }
 
     return null;
