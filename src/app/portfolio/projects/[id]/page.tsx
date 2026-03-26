@@ -11,12 +11,12 @@ import { ImageWithCaption } from "@/components/ImageWithCaption";
 import { RetryButton } from "@/components/RetryButton";
 
 import {
+  getProjects,
   findProjectByPcode,
   strapiProjectPcodeSlug,
   type StrapiProjectNode,
 } from "@/lib/__strapiProjects";
 import {
-  fetchStrapiProjectByPcode,
   fetchStrapiProjects,
   fetchStrapiProjectsStrict,
 } from "@/lib/__fetchStrapiProjects";
@@ -83,20 +83,13 @@ function hasContent(value: unknown): boolean {
 
 const PLACEHOLDER_IMAGE = "/imgs/placeholder.jpg";
 
-/** Static portfolio data — no time-based ISR (must match static Strapi fetch cache). */
-export const revalidate = false;
+/** Hourly ISR: pre-render at build, regenerate on a 3600s cadence. */
+export const revalidate = 3600;
 
 const normalizePcode = (code: string): string => {
   const n = code.replace(/^0+/, "") || "0";
   return n.length === 1 ? `0${n}` : n.padStart(2, "0");
 };
-
-function strapiProjectDataAsList(data: unknown): StrapiProjectNode[] {
-  if (Array.isArray(data)) return data as StrapiProjectNode[];
-  if (data != null && typeof data === "object")
-    return [data as StrapiProjectNode];
-  return [];
-}
 
 function enforcePortfolioStaticParams(): boolean {
   return (
@@ -158,16 +151,15 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
     (v, i, a) => a.indexOf(v) === i,
   );
 
-  const [pcodeResult, listRes] = await Promise.all([
-    fetchStrapiProjectByPcode(pcodeVariants),
-    fetchStrapiProjects(),
-  ]);
-
-  if (pcodeResult.kind === "not_found") {
-    notFound();
-  }
-
-  if (pcodeResult.kind === "unavailable") {
+  let listResData: StrapiProjectNode[] = [];
+  try {
+    const res = await getProjects();
+    listResData = res.data ?? [];
+  } catch (err) {
+    console.error(
+      "[portfolio/projects/[id]] Failed to load Strapi projects list; serving fallback",
+      err,
+    );
     const pdfUrl = "/docs/antonio-ruiz-portfolio-architecture.pdf";
 
     return (
@@ -208,12 +200,7 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
     );
   }
 
-  const projectResponse = { data: pcodeResult.node };
-
-  const projectNode = findProjectByPcode(
-    strapiProjectDataAsList(projectResponse.data),
-    pcodeVariants,
-  );
+  const projectNode = findProjectByPcode(listResData, pcodeVariants);
   const attrs =
     projectNode?.attributes ?? (projectNode as Record<string, unknown>);
 
@@ -370,7 +357,7 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
 
   return (
     <ProjectLayout
-      navItems={buildProjectNavItems(listRes.data ?? [])}
+      navItems={buildProjectNavItems(listResData)}
       pageSections={buildPageSections(proj)}
       activeId={normalizedId}
     >

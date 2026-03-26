@@ -21,10 +21,6 @@ function getStrapiApiToken(): string | null {
   return token && token.length > 0 ? token : null;
 }
 
-function isLikelyPcodeSlug(segment: string): boolean {
-  return /^\d{1,6}$/.test(segment);
-}
-
 /** Strapi returns JSON; proxies/errors often return HTML — never throw from JSON.parse. */
 function parseStrapiJson(text: string, res: Response): unknown | null {
   if (!res.ok || text.trimStart().startsWith("<")) return null;
@@ -131,7 +127,7 @@ function expandPcodeFilterValues(segments: string[]): string[] {
   return out;
 }
 
-export type FetchStrapiProjectByPcodeResult =
+type FetchStrapiProjectByPcodeResult =
   | { kind: "project"; node: unknown }
   | { kind: "not_found" }
   | { kind: "unavailable" };
@@ -192,82 +188,5 @@ export async function fetchStrapiProjectByPcode(
   } catch (error) {
     console.error("fetchStrapiProjectByPcode:", error);
     return { kind: "unavailable" };
-  }
-}
-
-/**
- * Loads a single project by Strapi document id (or legacy numeric id).
- * Always calls `GET /api/projects/:documentId` — use after resolving pcode → id from the list.
- */
-export async function fetchStrapiProjectByDocumentId(
-  documentId: string,
-): Promise<{ data?: unknown } | null> {
-  try {
-    const baseUrl = getStrapiBaseUrl().replace(/\/$/, "");
-    if (!baseUrl) return null;
-
-    const apiToken = getStrapiApiToken();
-    if (!apiToken) return null;
-
-    const res = await fetch(
-      `${baseUrl}/api/projects/${encodeURIComponent(documentId)}?populate=*`,
-      {
-        headers: {
-          Authorization: `Bearer ${apiToken}`,
-        },
-        cache: "force-cache",
-        next: {
-          revalidate: STRAPI_STATIC_REVALIDATE,
-          tags: [STRAPI_PROJECTS_CACHE_TAG],
-        },
-      },
-    );
-    const text = await res.text();
-    const parsed = parseStrapiJson(text, res);
-    if (parsed != null) return parsed as { data?: unknown };
-    return null;
-  } catch (error) {
-    console.error("Failed to fetch project:", error);
-    return null;
-  }
-}
-
-export async function fetchStrapiProjectById(
-  id: string,
-): Promise<{ data?: unknown } | null> {
-  try {
-    const baseUrl = getStrapiBaseUrl().replace(/\/$/, "");
-    if (!baseUrl) return null;
-
-    const apiToken = getStrapiApiToken();
-    if (!apiToken) return null;
-
-    const headers = {
-      Authorization: `Bearer ${apiToken}`,
-    };
-
-    if (isLikelyPcodeSlug(id)) {
-      const byPcode = await fetchStrapiProjectByPcode([id]);
-      if (byPcode.kind === "project") return { data: byPcode.node };
-      if (byPcode.kind === "not_found") return null;
-    }
-
-    const res = await fetch(
-      `${baseUrl}/api/projects/${encodeURIComponent(id)}?populate=*`,
-      { headers },
-    );
-    const text = await res.text();
-    const parsed = parseStrapiJson(text, res);
-    if (parsed != null) return parsed;
-
-    if (res.status === 404) {
-      const byPcode = await fetchStrapiProjectByPcode([id]);
-      if (byPcode.kind === "project") return { data: byPcode.node };
-    }
-
-    return null;
-  } catch (error) {
-    console.error("Failed to fetch project:", error);
-    return null;
   }
 }

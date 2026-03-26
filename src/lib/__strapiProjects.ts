@@ -26,7 +26,7 @@ export function strapiProjectPcodeSlug(node: StrapiProjectNode): string {
   return toTwoDigitPcode(undefined);
 }
 
-const PROJECTS_IN_MEMORY_SNAPSHOT_TTL_MS = 45 * 60 * 1000;
+const PROJECTS_IN_MEMORY_SNAPSHOT_TTL_MS = REVALIDATE_MS * 1000;
 
 /** Use with `fetch(..., { next: { revalidate, tags } })` — portfolio list fetch uses `STRAPI_STATIC_REVALIDATE` from `@/lib/revalidate`; `getProjects()` still uses `REVALIDATE_MS`. */
 export const STRAPI_PROJECTS_CACHE_TAG = "strapi-projects";
