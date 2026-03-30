@@ -1,10 +1,11 @@
+import { cacheLife } from "next/cache";
 import { getNewProjects } from "@/lib/getNewProjects";
 import { TocProjectsShell } from "./TocProjectsShell";
 
-/** Static portfolio TOC — aligned with `/portfolio/projects/[id]` Strapi cache. */
-export const revalidate = false;
-
 export default async function TableOfContentsZeroPage() {
+  "use cache";
+  cacheLife("max");
+
   const projects = await getNewProjects();
   const list = Array.isArray(projects.data) ? projects.data : [];
 

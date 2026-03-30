@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { Suspense, useSyncExternalStore } from "react";
 import { usePathname } from "next/navigation";
 import Navbar from "@/components/Navbar";
 
@@ -8,6 +9,19 @@ type ClientRootLayoutProps = {
   children: React.ReactNode;
   fontClassNames: string;
 };
+
+/**
+ * Client-only year via `useSyncExternalStore`; wrapped in `Suspense` per
+ * https://nextjs.org/docs/messages/next-prerender-current-time
+ */
+function CopyrightYear() {
+  const year = useSyncExternalStore(
+    () => () => {},
+    () => String(new Date().getFullYear()),
+    () => "",
+  );
+  return <>{year}</>;
+}
 
 export function ClientRootLayout({
   children,
@@ -33,7 +47,10 @@ export function ClientRootLayout({
         role="contentinfo"
       >
         <p suppressHydrationWarning>
-          © {new Date().getFullYear()}{" "}
+          ©{" "}
+          <Suspense fallback={<span className="inline-block min-w-[2ch]" aria-hidden />}>
+            <CopyrightYear />
+          </Suspense>{" "}
           <Link
             href="/"
             className="text-zinc-400 transition-colors hover:text-white"

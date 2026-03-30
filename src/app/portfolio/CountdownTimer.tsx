@@ -2,9 +2,13 @@
 
 import { useEffect, useState } from "react";
 
-function getTimeLeft(endDate: Date) {
-  const now = new Date();
-  const diff = endDate.getTime() - now.getTime();
+/** Launch instant (ms) — module scope avoids `new Date()` during render. */
+const LAUNCH_END_MS = Date.parse("2026-03-08T00:00:00-06:00");
+
+/** Called only from `useEffect` — not during SSR/prerender. */
+function getTimeLeft(endMs: number) {
+  const now = Date.now();
+  const diff = endMs - now;
   if (diff <= 0) {
     return { days: 0, hours: 0, minutes: 0, seconds: 0 };
   }
@@ -17,22 +21,21 @@ function getTimeLeft(endDate: Date) {
 
 const ZERO = { days: 0, hours: 0, minutes: 0, seconds: 0 };
 
-function useCountdown(targetDate: Date) {
+function useCountdown(endMs: number) {
   const [timeLeft, setTimeLeft] = useState(ZERO);
 
   useEffect(() => {
-    const tick = () => setTimeLeft(getTimeLeft(targetDate));
+    const tick = () => setTimeLeft(getTimeLeft(endMs));
     tick();
     const timer = setInterval(tick, 1000);
     return () => clearInterval(timer);
-  }, [targetDate]);
+  }, [endMs]);
 
   return timeLeft;
 }
 
 export default function CountdownTimer() {
-  const launchDay = new Date("2026-03-08T00:00:00-06:00");
-  const { days, hours, minutes, seconds } = useCountdown(launchDay);
+  const { days, hours, minutes, seconds } = useCountdown(LAUNCH_END_MS);
 
   return (
     <div className="flex flex-wrap justify-center gap-4 sm:gap-8">

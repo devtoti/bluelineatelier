@@ -9,7 +9,7 @@ import { RenderPhotos } from "@/components/RenderPhotos";
 import { ImageCarousel } from "../../../../components/ImageCarousel";
 import { ImageWithCaption } from "@/components/ImageWithCaption";
 import { RetryButton } from "@/components/RetryButton";
-
+import { cacheLife } from "next/cache";
 import {
   getProjects,
   findProjectByPcode,
@@ -83,9 +83,6 @@ function hasContent(value: unknown): boolean {
 
 const PLACEHOLDER_IMAGE = "/imgs/placeholder.jpg";
 
-/** Hourly ISR: pre-render at build, regenerate on a 3600s cadence. */
-export const revalidate = 3600;
-
 const normalizePcode = (code: string): string => {
   const n = code.replace(/^0+/, "") || "0";
   return n.length === 1 ? `0${n}` : n.padStart(2, "0");
@@ -97,6 +94,45 @@ function enforcePortfolioStaticParams(): boolean {
     process.env.CI === "true"
   );
 }
+
+const ErrorFetchingProjects = ({ id, pdfUrl }: { id: string, pdfUrl: string }) => {
+  return (
+    <div className="back-cover relative min-h-[100svh] w-full font-sans overflow-hidden">
+      <div className="relative z-10 mx-auto min-h-svh max-w-5xl px-6 py-12">
+        <h1
+          className="font-heading text-xl lg:text-3xl font-bold mb-2"
+          style={{ color: "#53A4D7" }}
+        >
+          project-{id}
+          <span style={{ color: "#BB2EB5" }}> ( )</span>
+        </h1>
+
+        <div className="rounded border border-amber-500/50 bg-amber-950/20 p-4 text-amber-200">
+          <p className="font-medium">Project could not be loaded</p>
+          <p className="mt-1 text-sm text-zinc-400">
+            Strapi may be temporarily unavailable (e.g. 503). Please try again
+            in a moment.
+          </p>
+
+          <div className="mt-4 w-full flex flex-col gap-3 sm:flex-row sm:items-center">
+            <RetryButton
+              hardReload
+              label="Retry"
+              className="rounded border border-zinc-500 bg-zinc-900 px-4 py-2 text-sm font-medium text-zinc-200 transition-colors hover:border-zinc-400 hover:bg-zinc-800 text-center disabled:opacity-60"
+            />
+            <a
+              href={pdfUrl}
+              className="rounded border border-zinc-500 bg-zinc-900 px-4 py-2 text-sm font-medium text-zinc-200 transition-colors hover:border-zinc-400 hover:bg-zinc-800 text-center"
+              download
+            >
+              View PDF Portfolio
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 export async function generateStaticParams() {
   const strict = enforcePortfolioStaticParams();
@@ -135,6 +171,9 @@ export async function generateStaticParams() {
 }
 
 export default async function ProjectPage({ params }: ProjectPageProps) {
+  "use cache";
+  cacheLife("hours");
+
   const { id } = await params;
   const normalizedId = normalizePcode(id);
 
@@ -160,44 +199,8 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
       "[portfolio/projects/[id]] Failed to load Strapi projects list; serving fallback",
       err,
     );
-    const pdfUrl = "/docs/antonio-ruiz-portfolio-architecture.pdf";
 
-    return (
-      <div className="back-cover relative min-h-[100svh] w-full font-sans overflow-hidden">
-        <div className="relative z-10 mx-auto min-h-svh max-w-5xl px-6 py-12">
-          <h1
-            className="font-heading text-xl lg:text-3xl font-bold mb-2"
-            style={{ color: "#53A4D7" }}
-          >
-            project-{id}
-            <span style={{ color: "#BB2EB5" }}> ( )</span>
-          </h1>
-
-          <div className="rounded border border-amber-500/50 bg-amber-950/20 p-4 text-amber-200">
-            <p className="font-medium">Project could not be loaded</p>
-            <p className="mt-1 text-sm text-zinc-400">
-              Strapi may be temporarily unavailable (e.g. 503). Please try again
-              in a moment.
-            </p>
-
-            <div className="mt-4 w-full flex flex-col gap-3 sm:flex-row sm:items-center">
-              <RetryButton
-                hardReload
-                label="Retry"
-                className="rounded border border-zinc-500 bg-zinc-900 px-4 py-2 text-sm font-medium text-zinc-200 transition-colors hover:border-zinc-400 hover:bg-zinc-800 text-center disabled:opacity-60"
-              />
-              <a
-                href={pdfUrl}
-                className="rounded border border-zinc-500 bg-zinc-900 px-4 py-2 text-sm font-medium text-zinc-200 transition-colors hover:border-zinc-400 hover:bg-zinc-800 text-center"
-                download
-              >
-                View PDF Portfolio
-              </a>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
+   return <ErrorFetchingProjects id={id} pdfUrl="/docs/antonio-ruiz-portfolio-architecture.pdf"/>;
   }
 
   const projectNode = findProjectByPcode(listResData, pcodeVariants);

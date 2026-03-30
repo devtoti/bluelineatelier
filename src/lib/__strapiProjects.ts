@@ -26,17 +26,10 @@ export function strapiProjectPcodeSlug(node: StrapiProjectNode): string {
   return toTwoDigitPcode(undefined);
 }
 
-const PROJECTS_IN_MEMORY_SNAPSHOT_TTL_MS = REVALIDATE_MS * 1000;
-
 /** Use with `fetch(..., { next: { revalidate, tags } })` — portfolio list fetch uses `STRAPI_STATIC_REVALIDATE` from `@/lib/revalidate`; `getProjects()` still uses `REVALIDATE_MS`. */
 export const STRAPI_PROJECTS_CACHE_TAG = "strapi-projects";
 const STRAPI_PROJECTS_DEBUG_CACHE =
   process.env.STRAPI_PROJECTS_DEBUG_CACHE === "true";
-
-let lastGoodProjects: StrapiProjectsResponse | null = null;
-let lastGoodAtMs = 0;
-
-let refreshInFlight: Promise<StrapiProjectsResponse> | null = null;
 
 export function getStrapiBaseUrl(): string {
   const isAccessingProductionStrapi = false;
@@ -59,7 +52,6 @@ async function fetchProjectsFromStrapi(): Promise<StrapiProjectsResponse> {
   const baseUrl = getStrapiBaseUrl();
   const apiToken = getStrapiApiToken();
 
-  const t0 = Date.now();
   const res = await fetch(`${baseUrl}/api/projects?populate=*`, {
     cache: "force-cache",
     next: {
@@ -77,9 +69,7 @@ async function fetchProjectsFromStrapi(): Promise<StrapiProjectsResponse> {
     const cacheHint =
       xVercelCache ?? xNextjsCache ?? "(no cache headers present)";
     console.log(
-      `[strapiProjects] fetch /api/projects status=${res.status} dtMs=${
-        Date.now() - t0
-      } cache=${cacheHint}`,
+      `[strapiProjects] fetch /api/projects status=${res.status} cache=${cacheHint}`,
     );
   }
 
@@ -90,69 +80,38 @@ async function fetchProjectsFromStrapi(): Promise<StrapiProjectsResponse> {
   return (await res.json()) as StrapiProjectsResponse;
 }
 
-function startProjectsRefresh(): Promise<StrapiProjectsResponse> {
-  if (refreshInFlight) return refreshInFlight;
-
-  refreshInFlight = (async () => {
-    try {
-      const fresh = await fetchProjectsFromStrapi();
-      lastGoodProjects = fresh;
-      lastGoodAtMs = Date.now();
-      return fresh;
-    } catch (err) {
-      const cause =
-        err instanceof Error ? (err.cause as unknown) : undefined;
-      const code =
-        cause &&
-        typeof cause === "object" &&
-        "code" in cause &&
-        typeof (cause as { code: unknown }).code === "string"
-          ? (cause as { code: string }).code
-          : undefined;
-
-      if (code === "ECONNREFUSED") {
-        const baseUrl = getStrapiBaseUrl();
-        throw new Error(
-          `Cannot reach Strapi at ${baseUrl}. Is the Strapi server running? (e.g. npm run develop in your Strapi project)`,
-          { cause: err },
-        );
-      }
-      throw err;
-    } finally {
-      refreshInFlight = null;
-    }
-  })();
-
-  return refreshInFlight;
-}
-
 /** Clears the per-instance snapshot so the next `getProjects()` hits Strapi again. */
 export function clearStrapiProjectsMemoryCache(): void {
-  lastGoodProjects = null;
-  lastGoodAtMs = 0;
-  refreshInFlight = null;
+  // No-op: in-memory project snapshot caching has been removed.
+}
+
+const GET_PROJECTS_MAX_ATTEMPTS = 3;
+const GET_PROJECTS_RETRY_DELAY_MS = 5000;
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
 }
 
 export async function getProjects(): Promise<StrapiProjectsResponse> {
-  const now = Date.now();
-
-  if (
-    lastGoodProjects &&
-    now - lastGoodAtMs >= 0 &&
-    now - lastGoodAtMs < PROJECTS_IN_MEMORY_SNAPSHOT_TTL_MS
-  ) {
-    return lastGoodProjects;
-  }
-
-  if (lastGoodProjects) {
+  let lastError: unknown;
+  for (let attempt = 1; attempt <= GET_PROJECTS_MAX_ATTEMPTS; attempt++) {
     try {
-      return await startProjectsRefresh();
-    } catch {
-      return lastGoodProjects;
+      return await fetchProjectsFromStrapi();
+    } catch (err) {
+      lastError = err;
+      if (attempt < GET_PROJECTS_MAX_ATTEMPTS) {
+        await sleep(GET_PROJECTS_RETRY_DELAY_MS);
+      }
     }
   }
-
-  return startProjectsRefresh();
+  if (lastError instanceof Error) {
+    throw lastError;
+  }
+  throw new Error(
+    `getProjects failed after ${GET_PROJECTS_MAX_ATTEMPTS} attempts: ${String(lastError)}`,
+  );
 }
 
 function pcodeFromNode(node: StrapiProjectNode): string {
