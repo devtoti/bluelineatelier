@@ -1,12 +1,11 @@
 "use server";
 
 import { revalidateTag } from "next/cache";
-import { fetchStrapiProjects } from "@/lib/__fetchStrapiProjects";
 import {
-  getProjects,
+  getStrapiProjectsCached,
   findProjectByPcode,
   STRAPI_PROJECTS_CACHE_TAG,
-  clearStrapiProjectsMemoryCache,
+  prepareStrapiProjectsTagRevalidation,
   type StrapiProjectNode,
 } from "@/lib/__strapiProjects";
 import { buildProjectNavItems, type ProjectNavItem } from "@/lib/__portfolioNav";
@@ -32,7 +31,7 @@ export async function getProjectLayoutData(
 
   let data: StrapiProjectNode[] = [];
   try {
-    const res = await getProjects();
+    const res = await getStrapiProjectsCached();
     data = res.data ?? [];
   } catch {
     return null;
@@ -61,7 +60,7 @@ export async function getProjectLayoutData(
 
 export async function getPortfolioNavItems(): Promise<ProjectNavItem[]> {
   try {
-    const res = await getProjects();
+    const res = await getStrapiProjectsCached();
     const data = res.data ?? [];
     return buildProjectNavItems(data);
   } catch {
@@ -70,12 +69,6 @@ export async function getPortfolioNavItems(): Promise<ProjectNavItem[]> {
 }
 
 export async function forceRefreshStrapiProjects(): Promise<void> {
-  clearStrapiProjectsMemoryCache();
+  prepareStrapiProjectsTagRevalidation();
   revalidateTag(STRAPI_PROJECTS_CACHE_TAG, "max");
-}
-
-/** Safe list fetch for TOC / client retries (handles HTML error bodies). */
-export async function fetchTocProjects(): Promise<StrapiProjectNode[]> {
-  const res = await fetchStrapiProjects();
-  return Array.isArray(res.data) ? res.data : [];
 }

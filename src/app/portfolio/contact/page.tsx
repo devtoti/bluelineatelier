@@ -1,13 +1,13 @@
 import "../../../projects.css";
-import { getProjects } from "@/lib/__strapiProjects";
+import { getStrapiProjectsCached } from "@/lib/__strapiProjects";
 import { buildProjectNavItems } from "@/lib/__portfolioNav";
 import { ProjectNavigation } from "@/components/ProjectNavigation";
 import { ContactInfo } from "@/components/ContactInfo";
 
 export default async function ContactPage() {
-  let data: Awaited<ReturnType<typeof getProjects>>["data"] = [];
+  let data: Awaited<ReturnType<typeof getStrapiProjectsCached>>["data"] = [];
   try {
-    const res = await getProjects();
+    const res = await getStrapiProjectsCached();
     data = res.data ?? [];
   } catch (err) {
     console.error("Strapi fetch failed:", err);

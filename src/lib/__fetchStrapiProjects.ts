@@ -39,27 +39,22 @@ const strapiProjectsListCache = {
   },
 };
 
-async function fetchStrapiProjectsInternal(
-  strict: boolean,
-): Promise<StrapiProjectsResponse> {
+/**
+ * Full project list from Strapi. Succeeds only when `data` is a non-empty array.
+ */
+export async function fetchStrapiProjects(): Promise<StrapiProjectsResponse> {
   const baseUrl = getStrapiBaseUrl().replace(/\/$/, "");
   if (!baseUrl) {
-    if (strict) {
-      throw new Error(
-        "[portfolio] NEXT_PUBLIC_STRAPI_URL is required to pre-render project routes",
-      );
-    }
-    return { data: [] };
+    throw new Error(
+      "[portfolio] NEXT_PUBLIC_STRAPI_URL is required to pre-render project routes",
+    );
   }
 
   const apiToken = getStrapiApiToken();
   if (!apiToken) {
-    if (strict) {
-      throw new Error(
-        "[portfolio] Strapi API token is required to pre-render project routes",
-      );
-    }
-    return { data: [] };
+    throw new Error(
+      "[portfolio] Strapi API token is required to pre-render project routes",
+    );
   }
 
   const res = await fetch(`${baseUrl}/api/projects?populate=*`, {
@@ -73,40 +68,21 @@ async function fetchStrapiProjectsInternal(
   const parsed = parseStrapiJson(text, res);
 
   if (!parsed || typeof parsed !== "object") {
-    if (strict) {
-      throw new Error(
-        `[portfolio] Strapi project list failed (${res.status}) or returned non-JSON`,
-      );
-    }
-    return { data: [] };
+    throw new Error(
+      `[portfolio] Strapi project list failed (${res.status}) or returned non-JSON`,
+    );
   }
 
   const data = (parsed as { data?: unknown }).data;
   const arr = Array.isArray(data) ? (data as StrapiProjectNode[]) : [];
 
-  if (strict && arr.length === 0) {
+  if (arr.length === 0) {
     throw new Error(
-      "[portfolio] Strapi returned zero projects; cannot pre-render /portfolio/projects/[id]",
+      "[portfolio] Strapi returned zero projects; expected a non-empty list",
     );
   }
 
   return { data: arr };
-}
-
-/** Resilient list fetch for runtime; returns empty on failure. */
-export async function fetchStrapiProjects(): Promise<StrapiProjectsResponse> {
-  try {
-    return await fetchStrapiProjectsInternal(false);
-  } catch {
-    return { data: [] };
-  }
-}
-
-/**
- * Fails loudly — use from `generateStaticParams` when build must not ship without projects.
- */
-export async function fetchStrapiProjectsStrict(): Promise<StrapiProjectsResponse> {
-  return fetchStrapiProjectsInternal(true);
 }
 
 /** Unique pcode strings to try with Strapi `filters[pcode][$eq]` (order preserved). */
@@ -134,7 +110,7 @@ type FetchStrapiProjectByPcodeResult =
 
 /**
  * Loads one project by pcode via `GET /api/projects?filters[pcode][$eq]=...&populate=*`.
- * Does not depend on the full project list. Uses the same Data Cache / tags as other Strapi fetches.
+ * Empty `data` here means no matching row (not an empty catalog).
  */
 export async function fetchStrapiProjectByPcode(
   pcodeVariants: string[],

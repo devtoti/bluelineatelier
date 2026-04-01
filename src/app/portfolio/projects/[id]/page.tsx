@@ -11,15 +11,12 @@ import { ImageWithCaption } from "@/components/ImageWithCaption";
 import { RetryButton } from "@/components/RetryButton";
 import { cacheLife } from "next/cache";
 import {
-  getProjects,
+  getStrapiProjectsCached,
   findProjectByPcode,
   strapiProjectPcodeSlug,
   type StrapiProjectNode,
 } from "@/lib/__strapiProjects";
-import {
-  fetchStrapiProjects,
-  fetchStrapiProjectsStrict,
-} from "@/lib/__fetchStrapiProjects";
+import { fetchStrapiProjects } from "@/lib/__fetchStrapiProjects";
 import { ProjectLayout } from "@/app/portfolio/ProjectLayout";
 import { buildProjectNavItems } from "@/lib/__portfolioNav";
 import { buildPageSections } from "@/lib/__projectPageSections";
@@ -138,10 +135,8 @@ export async function generateStaticParams() {
   const strict = enforcePortfolioStaticParams();
 
   try {
-    const res = strict
-      ? await fetchStrapiProjectsStrict()
-      : await fetchStrapiProjects();
-    const data = res.data ?? [];
+    const res = await fetchStrapiProjects();
+    const data = res.data;
     const params = data
       .map((node) => {
         const pcode = strapiProjectPcodeSlug(node);
@@ -192,7 +187,7 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
 
   let listResData: StrapiProjectNode[] = [];
   try {
-    const res = await getProjects();
+    const res = await getStrapiProjectsCached();
     listResData = res.data ?? [];
   } catch (err) {
     console.error(
