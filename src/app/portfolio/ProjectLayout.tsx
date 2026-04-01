@@ -72,7 +72,7 @@ export function ProjectLayout({
           </div>
 
           <main
-            className="scrollable-project-main min-h-0 min-w-0 align-self-center justify-self-center w-full max-w-4xl sm:pt-0 row-start-1 -row-end-1 overflow-y-auto overflow-x-hidden scroll-smooth md:py-8 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#2B4673]/40 col-start-1 col-end-2 md:col-start-2 md:col-end-3 row-start-1 row-end-4"
+            className="scrollable-project-main min-h-0 min-w-0 align-self-center justify-self-center w-full max-w-4xl xl:max-w-6xl sm:pt-0 row-start-1 -row-end-1 overflow-y-auto overflow-x-hidden scroll-smooth md:py-8 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#2B4673]/40 col-start-1 col-end-2 md:col-start-2 md:col-end-3 row-start-1 row-end-4"
             role="region"
             aria-label="Project content"
             tabIndex={0}

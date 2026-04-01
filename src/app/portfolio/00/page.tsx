@@ -1,4 +1,4 @@
-import { fetchStrapiProjects } from "@/lib/__fetchStrapiProjects";
+import { fetchStrapiProjects } from "@/lib/__strapiProjects";
 import { TocProjectsShell } from "./TocProjectsShell";
 
 

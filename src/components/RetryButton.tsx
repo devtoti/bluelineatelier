@@ -2,7 +2,6 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { forceRefreshStrapiProjects } from "@/app/portfolio/actions";
 
 export function RetryButton({
   label = "Retry",
@@ -12,9 +11,8 @@ export function RetryButton({
   label?: string;
   className?: string;
   /**
-   * Clears the in-memory Strapi snapshot + invalidates the tagged fetch cache,
-   * then reloads the document. Use when `router.refresh()` alone does nothing
-   * (e.g. empty cached projects list).
+   * Full document reload instead of `router.refresh()`. Use when a soft refresh
+   * is not enough.
    */
   hardReload?: boolean;
 }) {
@@ -28,11 +26,6 @@ export function RetryButton({
       onClick={async () => {
         if (hardReload) {
           setPending(true);
-          try {
-            await forceRefreshStrapiProjects();
-          } catch (e) {
-            console.error(e);
-          }
           window.location.reload();
           return;
         }
