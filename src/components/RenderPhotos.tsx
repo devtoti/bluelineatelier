@@ -5,7 +5,45 @@ import { getStrapiMedia } from "@/utils/getStrapiMedia";
 import { PhotoProvider, PhotoView } from "react-photo-view";
 import "react-photo-view/dist/react-photo-view.css";
 
-const photoViewBeigeBackdrop = `.PhotoView-Slider__Backdrop { background: #e8e4dc !important; }`;
+const photoViewFullscreenStyles = `
+.PhotoView-Slider__Backdrop { background: #e8e4dc !important; }
+/* Library only mounts this node when overlayRender is set; pin caption to portal bottom */
+.PhotoView-Slider__Overlay {
+  position: absolute !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  z-index: 25 !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  pointer-events: none !important;
+}
+/* "Clean" UI fades overlay — keep caption legible */
+.PhotoView-Slider__clean .PhotoView-Slider__Overlay:has(.render-photos-fullscreen-caption) {
+  opacity: 1 !important;
+}
+.render-photos-fullscreen-caption {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: min(100%, 42rem);
+  margin-left: auto;
+  margin-right: auto;
+  padding: 0.75rem 1rem 1rem;
+  padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+  text-align: center;
+  font-size: 0.875rem;
+  line-height: 1.55;
+  color: #fafaf9;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.65);
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  max-height: min(40vh, 280px);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  pointer-events: auto;
+}
+`;
 
 export type PhotoGridItem = {
   url?: string;
@@ -100,8 +138,13 @@ export function RenderPhotos({
   const items = filterPhotos(list, nameContains);
 
   return (
-    <PhotoProvider loop={items.length} maskClosable pullClosable>
-      <style dangerouslySetInnerHTML={{ __html: photoViewBeigeBackdrop }} />
+    <PhotoProvider
+      loop={items.length}
+      maskClosable
+      pullClosable
+      overlayRender={(props) => props.overlay ?? null}
+    >
+      <style dangerouslySetInnerHTML={{ __html: photoViewFullscreenStyles }} />
       <article className="">
         {title != null && title !== "" && (
           <h3 className="text-base font-bold uppercase tracking-[0.15em] text-[#2B4673] mb-2">
@@ -118,13 +161,28 @@ export function RenderPhotos({
                 photo.name ??
                 `${altFallback} ${idx + 1}`,
             );
+            const description = photo.caption ?? photo.description ?? "";
+            const captionOrDescription = [photo.caption, photo.description].find(
+              (v): v is string => typeof v === "string" && v.trim().length > 0,
+            );
+            const fullscreenText = captionOrDescription ?? alt;
+            const overlay =
+              fullscreenText.trim() !== "" ? (
+                <p
+                  className="render-photos-fullscreen-caption"
+                  role="note"
+                  aria-live="polite"
+                >
+                  {fullscreenText}
+                </p>
+              ) : undefined;
             return (
-              <PhotoView key={photo.url ?? idx} src={src}>
+              <PhotoView key={photo.url ?? idx} src={src} overlay={overlay}>
                 <div className="cursor-pointer">
                   <ImageWithCaption
                     src={src}
                     alt={alt}
-                    description={photo.caption ?? photo.description ?? ""}
+                    description={description}
                     width={width}
                     height={height}
                     figureClassName="border-[#2B4673]"

@@ -3,6 +3,24 @@
 import Image from "next/image";
 import { useEffect, useId, useRef, useState } from "react";
 
+function CarouselMainSkeleton() {
+  return (
+    <div
+      aria-hidden
+      className="absolute inset-0 z-0 animate-pulse bg-zinc-400/90"
+    />
+  );
+}
+
+function CarouselThumbSkeleton() {
+  return (
+    <div
+      aria-hidden
+      className="absolute inset-0 z-0 animate-pulse bg-zinc-400/90"
+    />
+  );
+}
+
 const DEFAULT_FALLBACK = "/imgs/placeholder.jpg";
 // @ts-expect-error package exports don't expose types to moduleResolution
 import { Splide, SplideSlide } from "@splidejs/react-splide";
@@ -99,6 +117,43 @@ const thumbnailOptions: Options = {
  * ArchDaily-style image carousel: one main image (16:9 on desktop, 1:1 on mobile) with Splide thumbnail
  * navigation below. Main and thumbnails stay in sync. Accessible: ARIA, focus.
  */
+function CarouselMainImageInner({
+  item,
+  width,
+  height,
+  effectiveSrc,
+  priority,
+  onErrorFallback,
+}: {
+  item: CarouselItem;
+  width: number;
+  height: number;
+  effectiveSrc: string;
+  priority?: boolean;
+  onErrorFallback: () => void;
+}) {
+  const [loaded, setLoaded] = useState(false);
+  return (
+    <div className="relative h-full w-full">
+      {!loaded && <CarouselMainSkeleton />}
+      <Image
+        src={effectiveSrc}
+        alt={item.alt}
+        width={width}
+        height={height}
+        className="relative z-[1] h-full w-full object-cover"
+        style={{
+          display: "block",
+          mixBlendMode: "multiply",
+        }}
+        priority={priority}
+        onLoad={() => setLoaded(true)}
+        onError={onErrorFallback}
+      />
+    </div>
+  );
+}
+
 function CarouselImage({
   item,
   width,
@@ -114,25 +169,42 @@ function CarouselImage({
 }) {
   const [src, setSrc] = useState(item.url);
   const effectiveSrc = src || fallbackSrc;
+
   return (
-    <Image
-      src={effectiveSrc}
-      alt={item.alt}
+    <CarouselMainImageInner
+      key={effectiveSrc}
+      item={item}
       width={width}
       height={height}
-      className="max-h-full max-w-full object-cover"
-      style={{
-        width: "auto",
-        height: "auto",
-        maxWidth: "100%",
-        maxHeight: "100%",
-        display: "block",
-        mixBlendMode: "multiply",
-      }}
+      effectiveSrc={effectiveSrc}
       priority={priority}
-      // sizes="(max-width: 768px) 100vw, 640px"
-      onError={() => setSrc(fallbackSrc)}
+      onErrorFallback={() => setSrc(fallbackSrc)}
     />
+  );
+}
+
+function CarouselThumbImageInner({
+  currentSrc,
+  onErrorFallback,
+}: {
+  currentSrc: string;
+  onErrorFallback: () => void;
+}) {
+  const [loaded, setLoaded] = useState(false);
+  return (
+    <div className="relative h-full w-full">
+      {!loaded && <CarouselThumbSkeleton />}
+      <Image
+        src={currentSrc}
+        alt=""
+        width={104}
+        height={58}
+        className="relative z-[1] h-full w-full object-cover"
+        sizes="104px"
+        onLoad={() => setLoaded(true)}
+        onError={onErrorFallback}
+      />
+    </div>
   );
 }
 
@@ -144,15 +216,12 @@ function CarouselThumbImage({
   fallbackSrc: string;
 }) {
   const [currentSrc, setCurrentSrc] = useState(src || fallbackSrc);
+
   return (
-    <Image
-      src={currentSrc}
-      alt=""
-      width={104}
-      height={58}
-      className="h-full w-full object-cover"
-      sizes="104px"
-      onError={() => setCurrentSrc(fallbackSrc)}
+    <CarouselThumbImageInner
+      key={currentSrc}
+      currentSrc={currentSrc}
+      onErrorFallback={() => setCurrentSrc(fallbackSrc)}
     />
   );
 }
@@ -223,7 +292,7 @@ export function ImageCarousel({
                     }
                   }}
                 >
-                  <div className="absolute inset-0 flex items-center justify-center bg-zinc-200">
+                  <div className="absolute inset-0 bg-zinc-200">
                     <CarouselImage
                       item={item}
                       width={width}
@@ -241,7 +310,7 @@ export function ImageCarousel({
       {/* Thumbnail navigation (Splide sync); no arrows, active slide centered */}
       {items.length > 1 && (
         <div
-          className={`mt-3 ${thumbsClassName}`}
+          className={`mt-3 w-full min-w-0 max-w-full ${thumbsClassName}`}
           data-thumbnail-carousel
         >
           <Splide

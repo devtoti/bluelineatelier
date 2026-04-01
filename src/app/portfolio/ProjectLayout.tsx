@@ -45,12 +45,12 @@ export function ProjectLayout({
       />
 
       <div
-        className="project relative h-svh max-h-svh font-sans text-[#2B4673] overflow-hidden"
+        className="project relative h-svh max-h-svh min-w-0 w-full max-w-[100svw] font-sans text-[#2B4673] overflow-x-hidden overflow-y-hidden"
         style={{ backgroundColor: "#EDE7E3" }}
       >
         <div className="portfolio-grain-light" aria-hidden />
         <div className="portfolio-grid-light" aria-hidden />
-        <div className="relative z-10 grid grid-cols-[1fr] md:grid-cols-[4rem_1fr_4rem] grid-rows-[1fr_4rem_1fr] h-full w-full max-w-svw overflow-y-hidden mx-auto font-sans text-[#2B4673]">
+        <div className="relative z-10 grid min-w-0 w-full max-w-[100svw] grid-cols-[1fr] md:grid-cols-[4rem_minmax(0,1fr)_4rem] grid-rows-[1fr_4rem_1fr] h-full overflow-x-hidden overflow-y-hidden mx-auto font-sans text-[#2B4673]">
           <aside
             className="hidden lg:flex flex-col row-start-3 mt-auto"
             aria-label="Project index"
@@ -72,7 +72,7 @@ export function ProjectLayout({
           </div>
 
           <main
-            className="scrollable-project-main min-h-0 sm:pt-0 row-start-1 -row-end-1 overflow-y-auto overflow-x-hidden scroll-smooth md:py-8 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#2B4673]/40 col-start-1 col-end-2 md:col-start-2 md:col-end-3 row-start-1 row-end-4"
+            className="scrollable-project-main min-h-0 min-w-0 align-self-center justify-self-center w-full max-w-4xl sm:pt-0 row-start-1 -row-end-1 overflow-y-auto overflow-x-hidden scroll-smooth md:py-8 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#2B4673]/40 col-start-1 col-end-2 md:col-start-2 md:col-end-3 row-start-1 row-end-4"
             role="region"
             aria-label="Project content"
             tabIndex={0}
@@ -81,7 +81,7 @@ export function ProjectLayout({
           </main>
 
           <aside
-            className="hidden relative lg:flex flex-col h-min w-min pr-4 w-52 shrink-0 row-start-1 col-start-3"
+            className="hidden xl:flex min-h-0 w-max relative max-w-none flex-col self-start justify-self-start overflow-visible row-start-1 col-start-3 z-10"
             aria-label="On this page"
           >
             <PageContent sections={pageSections} />

@@ -359,7 +359,7 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
       pageSections={buildPageSections(proj)}
       activeId={normalizedId}
     >
-      <article className="scrollable-article bg-[#EDE7E3] mt-10 mx-auto max-w-2xl lg:max-w-4xl sm:mt-0 sm:pt-10 pt-4 px-4 md:px-6 sm:px-8 pb-12 relative border-[1px] border-zinc-300 rounded-sm z-10">
+      <article className="scrollable-article bg-[#EDE7E3] mt-10 mx-auto w-full min-w-0 max-w-2xl lg:max-w-4xl sm:mt-0 sm:pt-10 pt-4 px-4 md:px-6 sm:px-8 pb-12 relative border-[1px] border-zinc-300 rounded-sm z-10 overflow-x-hidden">
         <header className="border-b border-zinc-300 ">
           <p className="text-xs font-semibold uppercase tracking-[0.3em] opacity-70">
             {normalizedId} • {String(proj.domain ?? "").toUpperCase()}

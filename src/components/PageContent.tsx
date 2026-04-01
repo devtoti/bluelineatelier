@@ -122,17 +122,17 @@ export function PageContent({
       activeId === id ? "font-medium text-[#2B4673]" : "text-[#2B4673]/70"
     }`;
   const liClass = (id: string) =>
-    activeId === id ? "border-l-3 border-[#2B4673] -ml-[18px] pl-4" : "";
+    activeId === id ? "border-l-3 border-[#2B4673] pl-4" : "pl-4";
 
   return (
     <nav
       aria-label="On this page"
-      className={`-translate-x-1/3 page-content w-52 mt-16 shrink-0 ${className}`}
+      className={`page-content absolute top-0 right-4 w-max mt-16 shrink-0 ${className}`}
     >
       <p className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-[#2B4673] opacity-80">
         {title}
       </p>
-      <ul className="space-y-2 border-l-2 border-[#2B4673]/20 pl-4 text-sm">
+      <ul className="space-y-2 border-l-2 border-[#2B4673]/20 -ml-2 text-sm">
         <li key={PROJECT_INFO_ID} className={liClass(PROJECT_INFO_ID)}>
           <button
             type="button"

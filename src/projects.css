@@ -2,6 +2,23 @@
   color: #2B4673;
 }
 
+/* Project detail article: constrain intrinsic min-width (grid/flex children) + long strings */
+.scrollable-article {
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+/* Splide track can extend past the column; clip without affecting vertical scroll parent */
+[data-carousel] .splide,
+[data-thumbnail-carousel] {
+  max-width: 100%;
+}
+[data-thumbnail-carousel] {
+  overflow-x: hidden;
+}
+
 /* Scrollable project content: smooth scroll, non-clunky overscroll, scrollbar hidden */
 .scrollable-project-main {
   scroll-behavior: smooth;

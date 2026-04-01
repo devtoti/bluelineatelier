@@ -62,6 +62,19 @@ function getThumbnailUrl(projectNode: StrapiProjectNode): string | null {
   return getStrapiMedia(pick.url) ?? null;
 }
 
+function domainBadgeClassName(domain: string): string {
+  const base =
+    "mt-2 inline-block w-min capitalize px-3 py-1 text-xs font-regular rounded-full bg-[#191F30] opacity-90 shadow-sm pointer-events-auto border";
+  const key = domain.trim().toLowerCase();
+  if (key === "programming") {
+    return `${base} text-[#BB2EB5] border-[#BB2EB5]/30`;
+  }
+  if (key === "illustration") {
+    return `${base} text-green-400 border-green-400/30`;
+  }
+  return `${base} text-[#53A4D7] border-[#53A4D7]/30`;
+}
+
 type CardProps = {
   pcode: string;
   name: string;
@@ -83,7 +96,7 @@ function Card({
     <Link
       key={pcode}
       href={href}
-      className="toc-card-link card group relative flex h-full w-full flex-col overflow-hidden border border-[1px] border-gray-600/20 shadow-sm transition-shadow hover:shadow-md hover:border-[#53A4D7] hover:bg-black/10 border-solid focus:outline-none focus:ring-1 focus:ring-[#53A4D7] focus:ring-offset-2"
+      className="toc-card-link card group relative flex h-full w-full flex-col overflow-hidden border border-[1px] border-gray-600/20 shadow-sm transition-shadow hover:shadow-md hover:border-[#53A4D7] bg-black/10 hover:bg-black/20 border-solid focus:outline-none focus:ring-1 focus:ring-[#53A4D7] focus:ring-offset-2"
       style={{ cursor: "pointer" }}
     >
       <span className="bracket top-0 left-0 absolute w-4 h-4 border-t-1 border-l-1 border-white opacity-30 group-hover:opacity-0"></span>
@@ -120,7 +133,7 @@ function Card({
         <h3 className="font-heading text-lg font-regular group-hover:text-zinc-200 text-zinc-400 ">
           {name}
         </h3>
-        <span className="mt-2 inline-block w-min capitalize px-3 py-1 text-xs font-regular rounded-full bg-[#191F30] text-[#53A4D7] border border-[#53A4D7]/30 opacity-90 shadow-sm pointer-events-auto">
+        <span className={domainBadgeClassName(domain)}>
           {domain}
         </span>
         {summary ? (
