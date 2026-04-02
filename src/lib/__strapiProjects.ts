@@ -169,6 +169,14 @@ function sleep(ms: number): Promise<void> {
  * Same list with retries for transient failures (runtime pages, server actions).
  */
 export async function getStrapiProjects(): Promise<StrapiProjectsResponse> {
+  const initiateStrapiWarming = await wakeStrapi();
+  await sleep(30000)
+  console.log('initiateStrapiWarming', initiateStrapiWarming);
+  const isStrapiWarmedUp = await wakeStrapi();
+  if (!isStrapiWarmedUp.ok) {
+    throw new Error(`Strapi is not warmed up: ${isStrapiWarmedUp.statusText}`);
+  }
+  console.log('isStrapiWarmedUp', isStrapiWarmedUp);
   let lastError: unknown;
   for (
     let attempt = 1;
@@ -190,4 +198,29 @@ export async function getStrapiProjects(): Promise<StrapiProjectsResponse> {
   throw new Error(
     `getStrapiProjects failed after ${STRAPI_MAX_ATTEMPTS} attempts: ${String(lastError)}`,
   );
+}
+
+export async function wakeStrapi() {
+  try {
+    const response = await fetch(`${readStrapiEnvBaseUrl()}/api/about`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${readStrapiEnvApiToken()}`,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to wake Strapi: ${response.statusText}`);
+    }
+    return new Response(JSON.stringify({ message: 'Strapi is warmed up!' }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  } catch (error) {
+    return new Response(JSON.stringify({ message: error instanceof Error ? error.message : String(error) }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
 }
