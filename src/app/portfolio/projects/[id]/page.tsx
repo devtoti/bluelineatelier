@@ -1,5 +1,6 @@
 import "../../../../projects.css";
 import { notFound, redirect } from "next/navigation";
+import { cacheLife } from "next/cache";
 import {
   fetchStrapiProjects,
   getStrapiProjects,
@@ -19,8 +20,6 @@ import { ProjectDetailContent } from "./ProjectDetailContent";
 type ProjectPageProps = {
   params: Promise<{ id: string }>;
 };
-
-export const revalidate = 300;
 
 export async function generateStaticParams() {
   const strict = enforcePortfolioStaticParams();
@@ -55,6 +54,8 @@ export async function generateStaticParams() {
 }
 
 export default async function ProjectPage({ params }: ProjectPageProps) {
+  'use cache'
+  cacheLife('hours')
   const { id } = await params;
   const normalizedId = normalizePcode(id);
 

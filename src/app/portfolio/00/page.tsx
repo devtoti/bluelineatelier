@@ -1,13 +1,16 @@
-import { fetchStrapiProjects } from "@/lib/__strapiProjects";
-import { TocProjectsShell } from "./TocProjectsShell";
+import "../../../projects.css";
+import { Suspense } from "react";
+import {
+  TocProjectsShell,
+  TocProjectsShellFallback,
+} from "./TocProjectsShell";
 
-
-export default async function TableOfContentsZeroPage() {
-  const { data } = await fetchStrapiProjects();
-
+export default function TableOfContentsZeroPage() {
   return (
     <div className="box-border flex h-[100svh] max-h-[100svh] min-h-0 w-full flex-col overflow-hidden">
-      <TocProjectsShell projects={data} />
+      <Suspense fallback={<TocProjectsShellFallback />}>
+        <TocProjectsShell />
+      </Suspense>
     </div>
   );
 }

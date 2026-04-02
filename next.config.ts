@@ -1,10 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  experimental: {
-    // Disable so Server Component edits (e.g. h1 text) show up on refresh in dev
-    serverComponentsHmrCache: false,
-  },
+  cacheComponents: true,
   images: {
     remotePatterns: [
       {

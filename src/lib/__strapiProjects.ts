@@ -1,4 +1,4 @@
-import { STRAPI_LIST_REVALIDATE_SECONDS } from "./revalidate";
+import { cacheLife, revalidatePath } from "next/cache";
 
 export type StrapiProjectsResponse = {
   data: StrapiProjectNode[];
@@ -50,21 +50,27 @@ export function findProjectByPcode(
 /* Env (no HTTP, no Next fetch cache)                                          */
 /* -------------------------------------------------------------------------- */
 
+/** Local Strapi: `next dev`, or `STRAPI_USE_LOCAL=1` (e.g. `next build` against localhost). */
+function strapiLocal(): boolean {
+  return (
+    process.env.NODE_ENV === "development" ||
+    process.env.STRAPI_USE_LOCAL === "1"
+  );
+}
+
 /** Strapi origin from env; does not perform network I/O. */
 export function readStrapiEnvBaseUrl(): string {
-  const isAccessingProductionStrapi = false;
-  if (isAccessingProductionStrapi || process.env.NODE_ENV === "production") {
-    return String(process.env.NEXT_PUBLIC_STRAPI_URL);
-  }
-  return "http://localhost:1337";
+  const url = strapiLocal()
+    ? (process.env.STRAPI_LOCAL_URL ?? "http://localhost:1337")
+    : process.env.NEXT_PUBLIC_STRAPI_URL;
+  return String(url).replace(/\/$/, "");
 }
 
 /** API token from env; does not perform network I/O. */
 export function readStrapiEnvApiToken(): string {
-  const token =
-    process.env.NODE_ENV === "development"
-      ? process.env.NEXT_PUBLIC_STRAPI_DEV_API_TOKEN
-      : process.env.NEXT_PUBLIC_STRAPI_API_TOKEN;
+  const token = strapiLocal()
+    ? process.env.NEXT_PUBLIC_STRAPI_DEV_API_TOKEN
+    : process.env.NEXT_PUBLIC_STRAPI_API_TOKEN;
   if (!token) throw new Error("Strapi API token is not defined");
   return token;
 }
@@ -109,18 +115,9 @@ function parseStrapiJson(text: string, res: Response): Record<string, unknown> {
   return parsed as Record<string, unknown>;
 }
 
-const strapiListFetchOptions = {
-  cache: "force-cache" as const,
-  next: {
-    revalidate: STRAPI_LIST_REVALIDATE_SECONDS,
-  },
-};
-
-/**
- * `GET /api/projects?populate=*` — single attempt. Used directly for static
- * generation / TOC; {@link getStrapiProjects} wraps this with retries.
- */
-export async function fetchStrapiProjects(): Promise<StrapiProjectsResponse> {
+async function fetchStrapiProjectsOnce(
+  fetchInit: Pick<RequestInit, "cache"> = {},
+): Promise<StrapiProjectsResponse> {
   const baseUrl = readStrapiEnvBaseUrl().replace(/\/$/, "");
   if (!baseUrl.trim()) {
     throw new Error(
@@ -130,7 +127,7 @@ export async function fetchStrapiProjects(): Promise<StrapiProjectsResponse> {
   const apiToken = readStrapiEnvApiToken();
 
   const res = await fetch(`${baseUrl}/api/projects?populate=*`, {
-    ...strapiListFetchOptions,
+    ...fetchInit,
     headers: {
       Authorization: `Bearer ${apiToken}`,
     },
@@ -148,6 +145,15 @@ export async function fetchStrapiProjects(): Promise<StrapiProjectsResponse> {
   }
 
   return { data: arr };
+}
+
+/**
+ * Cached list — build / SSG / {@link getStrapiProjects}.
+ */
+export async function fetchStrapiProjects(): Promise<StrapiProjectsResponse> {
+  "use cache";
+  cacheLife("hours");
+  return fetchStrapiProjectsOnce();
 }
 
 const STRAPI_MAX_ATTEMPTS = 3;

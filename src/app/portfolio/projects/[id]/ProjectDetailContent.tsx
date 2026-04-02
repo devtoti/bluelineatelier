@@ -28,7 +28,6 @@ export function ProjectDetailContent({
   collaboratorsList,
   site,
   overview,
-  keyStages,
 }: ProjectDetailContentProps) {
   return (
     <article className="scrollable-article bg-[#EDE7E3] mt-10 mx-auto w-full min-w-0 max-w-2xl lg:max-w-4xl sm:mt-0 sm:pt-10 pt-4 px-4 md:px-6 sm:px-8 pb-12 relative border-[1px] border-zinc-300 rounded-sm z-10 overflow-x-hidden">
@@ -271,29 +270,6 @@ export function ProjectDetailContent({
         id="project-timeline"
         className="mt-4 grid gap-8 border-t border-zinc-300 text-xs sm:grid-cols-2"
       >
-        {/* <div>
-          <h2 className="font-heading text-[0.7rem] font-semibold uppercase tracking-[0.3em] opacity-70">
-            Project timeline
-          </h2>
-          <ol className="mt-4 space-y-2">
-            <li>
-              <span className="font-semibold">Initiation:</span>{" "}
-              {String(keyStages?.initiation ?? "")}
-            </li>
-            <li>
-              <span className="font-semibold">Planning:</span>{" "}
-              {String(keyStages?.planning ?? "")}
-            </li>
-            <li>
-              <span className="font-semibold">Execution:</span>{" "}
-              {String(keyStages?.execution ?? "")}
-            </li>
-            <li>
-              <span className="font-semibold">Completion:</span>{" "}
-              {String(keyStages?.completion ?? "")}
-            </li>
-          </ol>
-        </div> */}
       </section>
       <div className="mt-2">
         <div className="flex flex-wrap gap-1 md:gap-2">

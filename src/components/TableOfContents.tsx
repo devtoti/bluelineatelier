@@ -1,14 +1,11 @@
-"use client";
-
 import Link from "next/link";
 import Image from "next/image";
-import { useEffect, useRef } from "react";
-import gsap from "gsap";
 import {
   strapiProjectPcodeSlug,
   type StrapiProjectNode,
 } from "@/lib/__strapiProjects";
 import { getStrapiMedia } from "@/utils/getStrapiMedia";
+import { TableOfContentsGridClient } from "@/components/TableOfContentsGridClient";
 
 const FALLBACK_IMAGE = "/imgs/placeholder.jpg";
 const FALLBACK_IMAGE_ALT = "No image";
@@ -155,8 +152,6 @@ export function TableOfContents({
   projects,
   className = "",
 }: TableOfContentsProps) {
-  const sectionRef = useRef<HTMLElement>(null);
-
   const itemsByPcode: Record<string, StrapiProjectNode> = {};
   for (const project of projects) {
     const slug = strapiProjectPcodeSlug(project);
@@ -174,81 +169,47 @@ export function TableOfContents({
     if (node) items.push(node);
   }
 
-  useEffect(() => {
-    if (!sectionRef.current) return;
-    const prefersReducedMotion =
-      typeof window !== "undefined" &&
-      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (prefersReducedMotion) return;
-
-    const cards =
-      sectionRef.current.querySelectorAll<HTMLElement>(".toc-card-link");
-    if (cards.length === 0) return;
-
-    const ctx = gsap.context(() => {
-      gsap.from(cards, {
-        opacity: 0,
-        y: 24,
-        duration: 1.0,
-        stagger: 0.5,
-        ease: "power2.out",
-        overwrite: "auto",
-      });
-    }, sectionRef);
-
-    return () => ctx.revert();
-  }, [items.length]);
   return (
     <>
-      {/* <style
-        dangerouslySetInnerHTML={{
-          __html:
-            ".toc-card-link { cursor: pointer !important; } .toc-card-link:hover .toc-card-pcode { color: #FACF6A !important; }",
-        }}
-      /> */}
-         <h1
-            className="font-heading text-xl lg:text-3xl font-bold mb-2"
-            style={{ color: "#53A4D7" }}
-          >
-            tableOfContents
-            <span style={{ color: "#BB2EB5" }}>( )</span>
-          </h1>
-          <p className="text-zinc-300 text-sm mb-10">
-            {
-              "// A collection of architectural, programming, and design projects."
-            }
-          </p>
-      <section
-        ref={sectionRef}
-        aria-label="Table of Contents"
-        className={`grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 items-stretch ${className}`}
+      <h1
+        className="font-heading text-xl lg:text-3xl font-bold mb-2"
+        style={{ color: "#53A4D7" }}
       >
+        tableOfContents
+        <span style={{ color: "#BB2EB5" }}>( )</span>
+      </h1>
+      <p className="text-zinc-300 text-sm mb-10">
+        {
+          "// A collection of architectural, programming, and design projects."
+        }
+      </p>
+      <TableOfContentsGridClient className={className} itemCount={items.length}>
         {items.map((project) => {
-            const attrs =
-              project.attributes ?? (project as Record<string, unknown>);
-            const pcode = strapiProjectPcodeSlug(project);
-            const name =
-              String(attrs?.name ?? attrs?.title ?? `Project ${pcode}`).trim() ||
-              `Project ${pcode}`;
-            const summary =
-              String(attrs?.summary ?? attrs?.description ?? "").trim() || "";
-            const thumbnailUrl = getThumbnailUrl(project);
-            const href = `/portfolio/projects/${pcode}`;
-            const domain =
-              typeof attrs?.domain === "string" ? attrs.domain : "architecture";
-            return (
-              <Card
-                key={pcode}
-                pcode={pcode}
-                name={name}
-                summary={summary}
-                thumbnailUrl={thumbnailUrl}
-                href={href}
-                domain={domain}
-              />
-            );
-          })}
-      </section>
+          const attrs =
+            project.attributes ?? (project as Record<string, unknown>);
+          const pcode = strapiProjectPcodeSlug(project);
+          const name =
+            String(attrs?.name ?? attrs?.title ?? `Project ${pcode}`).trim() ||
+            `Project ${pcode}`;
+          const summary =
+            String(attrs?.summary ?? attrs?.description ?? "").trim() || "";
+          const thumbnailUrl = getThumbnailUrl(project);
+          const href = `/portfolio/projects/${pcode}`;
+          const domain =
+            typeof attrs?.domain === "string" ? attrs.domain : "architecture";
+          return (
+            <Card
+              key={pcode}
+              pcode={pcode}
+              name={name}
+              summary={summary}
+              thumbnailUrl={thumbnailUrl}
+              href={href}
+              domain={domain}
+            />
+          );
+        })}
+      </TableOfContentsGridClient>
     </>
   );
 }
