@@ -130,6 +130,7 @@ async function fetchStrapiProjectsOnce(
     ...fetchInit,
     headers: {
       Authorization: `Bearer ${apiToken}`,
+      'Content-Type': 'application/json',
     },
   });
 

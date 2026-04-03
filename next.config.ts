@@ -12,12 +12,12 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: "https",
-        hostname: "upbeat-talent-6d5a2283ac.strapiapp.com",
+        hostname: "automatic-bloom-06f2309866.strapiapp.com",
         pathname: "/uploads/**",
       },
       {
         protocol: "https",
-        hostname: "upbeat-talent-6d5a2283ac.media.strapiapp.com",
+        hostname: "automatic-bloom-06f2309866.media.strapiapp.com",
         pathname: "/**",
       },
     ],
