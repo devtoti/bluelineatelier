@@ -153,7 +153,7 @@ async function fetchStrapiProjectsOnce(
  */
 export async function fetchStrapiProjects(): Promise<StrapiProjectsResponse> {
   "use cache";
-  cacheLife("hours");
+  cacheLife("minutes");
   return fetchStrapiProjectsOnce();
 }
 
@@ -197,7 +197,7 @@ export async function getStrapiProjects(): Promise<StrapiProjectsResponse> {
     throw lastError;
   }
   throw new Error(
-    `getStrapiProjects failed after ${STRAPI_MAX_ATTEMPTS} attempts: ${String(lastError)}`,
+    `getStrapiProjects failed after: ${STRAPI_MAX_ATTEMPTS} attempts: ${String(lastError)}`,
   );
 }
 

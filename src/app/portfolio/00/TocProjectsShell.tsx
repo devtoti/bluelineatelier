@@ -19,7 +19,7 @@ export function TocProjectsShellFallback() {
 /** Cached Strapi list + shell — same pattern as /portfolio/projects/[id], longer TTL. */
 export async function TocProjectsShell() {
   "use cache";
-  cacheLife("weeks");
+  cacheLife("minutes");
 
   const { data: projects } = await getStrapiProjects().catch((err: unknown) => {
     throw new Error(
