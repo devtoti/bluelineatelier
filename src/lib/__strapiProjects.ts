@@ -1,4 +1,4 @@
-import { cacheLife, revalidatePath } from "next/cache";
+import { cacheLife } from "next/cache";
 
 export type StrapiProjectsResponse = {
   data: StrapiProjectNode[];
@@ -153,7 +153,7 @@ async function fetchStrapiProjectsOnce(
  */
 export async function fetchStrapiProjects(): Promise<StrapiProjectsResponse> {
   "use cache";
-  cacheLife("minutes");
+  cacheLife("hours");
   return fetchStrapiProjectsOnce();
 }
 
