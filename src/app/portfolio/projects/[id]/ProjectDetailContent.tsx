@@ -130,6 +130,13 @@ export function ProjectDetailContent({
           altFallback="Cover Image"
           fallbackSrc={PROJECT_PLACEHOLDER_IMAGE}
         />
+                <RenderPhotos
+          photos={photos}
+          nameContains="render"
+          title=""
+          altFallback="Render Image"
+          fallbackSrc={PROJECT_PLACEHOLDER_IMAGE}
+        />
       </article>
       <section id="overview" className="mt-10">
         <div>
