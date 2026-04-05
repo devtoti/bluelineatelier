@@ -1,19 +1,15 @@
 import "../../../projects.css";
-import { getStrapiProjects } from "@/lib/__strapiProjects";
+import { cacheLife } from "next/cache";
+import { fetchStrapiProjects } from "@/lib/__strapiProjects";
 import { buildProjectNavItems } from "@/lib/__portfolioNav";
 import { ProjectNavigation } from "@/components/ProjectNavigation";
 import { ContactInfo } from "@/components/ContactInfo";
 
 export default async function ContactPage() {
-  let data: Awaited<ReturnType<typeof getStrapiProjects>>["data"] = [];
-  try {
-    const res = await getStrapiProjects();
-    data = res.data ?? [];
-  } catch (err) {
-    console.error("Strapi fetch failed:", err);
-  }
-
-  const projectNavItems = buildProjectNavItems(Array.isArray(data) ? data : []);
+  "use cache";
+  cacheLife("max");
+  const { data } = await fetchStrapiProjects();
+  const projectNavItems = buildProjectNavItems(data);
 
   return (
     <div className="back-cover relative min-h-[100svh] w-full font-sans overflow-hidden">

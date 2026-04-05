@@ -1,12 +1,22 @@
 import Link from "next/link";
 import { PortfolioPageAnimations } from "./PortfolioPageAnimations";
 import { PortfolioTypewriterClient } from "./PortfolioTypewriterClient";
+import { fetchStrapiProjects } from "@/lib/__strapiProjects";
+import { buildProjectNavItems } from "@/lib/__portfolioNav";
+import { cacheLife } from "next/cache";
+import { ProjectNavigation } from "@/components/ProjectNavigation";
 
 export default async function Portfolio() {
+  "use cache";
+  cacheLife("max");
+  const { data } = await fetchStrapiProjects();
+  const projectNavItems = buildProjectNavItems(data);
   return (
     <div className="front-cover relative min-h-[100svh] h-svh max-h-svh w-full min-w-0 max-w-full font-sans overflow-hidden">
       <PortfolioPageAnimations>
-     
+      <div className="fixed bottom-10 left-2 z-20 hidden lg:block">
+        <ProjectNavigation items={projectNavItems} activeId="00" darkBg />
+      </div> 
       <div className="relative text-zinc-300 z-10 sm:px-0 md:px-8 md:py-12 flex flex-col items-start justify-center min-h-svh">
         <div className="headings w-full md:max-w-85 group p-6 hover:bg-black/10 relative flex flex-col items-start justify-between">
           <span className="bracket top-0 left-0 absolute w-4 h-4 border-t-[1px] border-l-[1px] border-white/50 opacity-0 transition-colors duration-400 group-hover:border-white/50 group-hover:opacity-100"></span>
