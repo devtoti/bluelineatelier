@@ -8,9 +8,8 @@ export default async function PortfolioLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const navItemsPromise = getStrapiProjects().then((res) =>
-    buildProjectNavItems(res.data),
-  );
+  const { data } = await getStrapiProjects();
+  const navItems = buildProjectNavItems(data);
 
   return (
     <div className="min-w-0 w-full bg-[#0C1222] max-w-full overflow-x-hidden">
@@ -19,7 +18,7 @@ export default async function PortfolioLayout({
         className="portfolio-grid-overlay opacity-80 pointer-events-none"
         aria-hidden
       />
-      <PortfolioShell navItemsPromise={navItemsPromise}>
+      <PortfolioShell navItems={navItems}>
         {children}
       </PortfolioShell>
       <Analytics />

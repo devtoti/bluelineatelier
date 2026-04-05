@@ -174,9 +174,9 @@ function sleep(ms: number): Promise<void> {
  * Same list with retries for transient failures (runtime pages, server actions).
  */
 export async function getStrapiProjects(): Promise<StrapiProjectsResponse> {
-  const initiateStrapiWarming = await wakeStrapi();
+  await wakeStrapi();
   await sleep(SLEEP_DELAY_MS)
-  console.log('initiateStrapiWarming', initiateStrapiWarming, SLEEP_DELAY_MS);
+  // console.log('initiateStrapiWarming', initiateStrapiWarming, SLEEP_DELAY_MS);
   const isStrapiWarmedUp = await wakeStrapi();
   if (!isStrapiWarmedUp.ok) {
     throw new Error(`Strapi is not warmed up: ${isStrapiWarmedUp.statusText}`);
