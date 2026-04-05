@@ -13,15 +13,32 @@ const iconClass =
 const tooltipClass =
   "pointer-events-none absolute top-4 left-1/2 z-50 mt-4 -translate-x-1/2 whitespace-nowrap rounded-md border border-zinc-500 bg-[#0C1222] px-2.5 py-1.5 text-xs font-medium text-white shadow-lg shadow-black/30 invisible opacity-0 transition-opacity duration-150 delay-100 group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100";
 
+function GitHubMark() {
+  return (
+    <svg
+      className={iconClass}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22" />
+    </svg>
+  );
+}
+
 export type ContactInfoProps = {
   name: string;
   description: string;
   email: string;
   phone: string;
-  portfolio: string;
+  portfolio?: string;
   className?: string;
   linkedin?: string;
   dribbble?: string;
+  github?: string;
   resume?: string; // url to PDF
 };
 
@@ -33,7 +50,7 @@ export function ContactInfo({
   description,
   email,
   phone,
-  portfolio,
+  github,
   className = "",
   linkedin,
   dribbble,
@@ -78,29 +95,29 @@ export function ContactInfo({
               Phone
             </span>
           </a>
-          {portfolio &&
-            (portfolio.startsWith("/") ? (
+          {github &&
+            (github.startsWith("/") ? (
               <Link
-                href={portfolio}
+                href={github}
                 className="icon-style group relative w-10 h-10 aspect-square border border-zinc-400 border-[1px] flex items-center justify-center transition-colors duration-150 hover:border-[#53A4D7] hover:bg-[#15304a] hover:bg-white/10 focus:border-[#53A4D7] focus:bg-[#15304a] focus:outline-none focus:ring-2 focus:ring-[#53A4D7] focus:ring-offset-2"
-                aria-label="Website"
+                aria-label="GitHub"
               >
-                <HiOutlineGlobeAlt className={iconClass} aria-hidden />
+                <GitHubMark />
                 <span role="tooltip" className={tooltipClass}>
-                  Website
+                  GitHub
                 </span>
               </Link>
             ) : (
               <a
-                href={portfolio}
+                href={github}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="icon-style group relative w-10 h-10 aspect-square border border-zinc-400 border-[1px] flex items-center justify-center transition-colors duration-150 hover:border-[#53A4D7] hover:bg-[#15304a] hover:bg-white/10 focus:border-[#53A4D7] focus:bg-[#15304a] focus:outline-none focus:ring-2 focus:ring-[#53A4D7] focus:ring-offset-2"
-                aria-label="Website"
+                aria-label="GitHub"
               >
-                <HiOutlineGlobeAlt className={iconClass} aria-hidden />
+                <GitHubMark />
                 <span role="tooltip" className={tooltipClass}>
-                  Website
+                  GitHub
                 </span>
               </a>
             ))}

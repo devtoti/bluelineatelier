@@ -15,6 +15,10 @@ export type StrapiProjectNode = {
 /* Pure helpers (no I/O)                                                       */
 /* -------------------------------------------------------------------------- */
 
+const SLEEP_DELAY_MS = process.env.NODE_ENV === "development"
+  ? 2000
+  : 30000;
+
 export function toTwoDigitPcode(value: string | number | undefined): string {
   if (value == null) return "00";
   const s = String(value).replace(/^0+/, "") || "0";
@@ -171,8 +175,8 @@ function sleep(ms: number): Promise<void> {
  */
 export async function getStrapiProjects(): Promise<StrapiProjectsResponse> {
   const initiateStrapiWarming = await wakeStrapi();
-  await sleep(30000)
-  console.log('initiateStrapiWarming', initiateStrapiWarming);
+  await sleep(SLEEP_DELAY_MS)
+  console.log('initiateStrapiWarming', initiateStrapiWarming, SLEEP_DELAY_MS);
   const isStrapiWarmedUp = await wakeStrapi();
   if (!isStrapiWarmedUp.ok) {
     throw new Error(`Strapi is not warmed up: ${isStrapiWarmedUp.statusText}`);

@@ -19,12 +19,16 @@ export default async function ContactPage() {
       <div className="relative z-10 px-8 py-12 flex flex-col items-center justify-center min-h-svh">
         <ContactInfo
           name="Antonio Ruiz"
-          description="Architect, designer, developer. I bring together architecture and software engineering to create innovative and sustainable solutions."
+          description="Architect, designer, developer. I bring together architecture and software engineering to create innovative and sustainable design solutions."
           email="toti.webdev@gmail.com"
           phone="+52 56 2009 2044"
-          portfolio="https://devtoti.com"
+          github="https://github.com/devtoti"
           resume="/docs/antonio-ruiz-architect-cv.pdf"
         />
+        <span className="text-zinc-600 text-xs text-balance text-center italic flex items-center flex-col justify-center gap-2">
+          <p>{"/* Built with Next.js, Tailwind, Strapi, and Neon */"}</p>
+          <p>{"/* Last updated: 04/05/2026 */"}</p>
+        </span>
       </div>
     </div>
   );

@@ -48,15 +48,18 @@ function StrapiNavToc({
   pathname: string;
 }) {
   const navItems = use(navItemsPromise);
-  if (pathname !== "/portfolio/00" || navItems.length === 0) {
+  const isCover = pathname === "/portfolio";
+  const isToc = pathname === "/portfolio/00";
+  if ((!isCover && !isToc) || (isToc && navItems.length === 0)) {
     return null;
   }
+  const activeId = isCover ? "cover" : "00";
   return (
     <div
       className="pb-10 pl-2 hidden lg:block relative z-10 mt-auto"
       aria-label="Project index"
     >
-      <ProjectNavigation items={navItems} activeId="00" darkBg />
+      <ProjectNavigation items={navItems} activeId={activeId} darkBg />
     </div>
   );
 }
