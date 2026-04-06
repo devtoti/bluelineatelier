@@ -53,8 +53,6 @@ export async function generateStaticParams() {
 }
 
 export default async function ProjectPage({ params }: ProjectPageProps) {
-  "use cache";
-  cacheLife("hours");
   const { id } = await params;
   const normalizedId = normalizePcode(id);
 

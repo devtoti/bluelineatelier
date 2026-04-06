@@ -79,12 +79,6 @@ async function fetchStrapiProjectsOnce(
   return { data: arr };
 }
 
-export async function fetchStrapiProjects(): Promise<StrapiProjectsResponse> {
-  "use cache";
-  cacheLife("hours");
-  return fetchStrapiProjectsOnce();
-}
-
 const STRAPI_MAX_ATTEMPTS = 3;
 const STRAPI_DELAY_MS = 3000;
 const SLEEP_DELAY_MS =
@@ -97,6 +91,8 @@ function sleep(ms: number): Promise<void> {
 }
 
 export async function fetchStrapiProjectsUncached(): Promise<StrapiProjectsResponse> {
+  "use cache";
+  cacheLife("hours");
   await wakeStrapi();
   await sleep(SLEEP_DELAY_MS);
   const isStrapiWarmedUp = await wakeStrapi();
@@ -106,7 +102,7 @@ export async function fetchStrapiProjectsUncached(): Promise<StrapiProjectsRespo
   let lastError: unknown;
   for (let attempt = 1; attempt <= STRAPI_MAX_ATTEMPTS; attempt++) {
     try {
-      return await fetchStrapiProjects();
+      return await fetchStrapiProjectsOnce();
     } catch (err) {
       lastError = err;
       if (attempt < STRAPI_MAX_ATTEMPTS) {

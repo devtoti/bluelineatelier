@@ -1,6 +1,6 @@
 import "../../../../projects.css";
 import { cacheLife } from "next/cache";
-import { fetchStrapiProjects } from "@/lib/__strapiProjects";
+import { fetchStrapiProjectsUncached } from "@/lib/__strapiProjects";
 import { buildProjectNavigation } from "@/lib/__portfolioNav";
 import { ProjectNavigation } from "@/components/ProjectNavigation";
 import { ContactInfo } from "@/components/ContactInfo";
@@ -8,7 +8,7 @@ import { ContactInfo } from "@/components/ContactInfo";
 export default async function ContactPage() {
   "use cache";
   cacheLife("max");
-  const { data } = await fetchStrapiProjects();
+  const { data } = await fetchStrapiProjectsUncached();
   const navigation = buildProjectNavigation(data);
 
   return (
