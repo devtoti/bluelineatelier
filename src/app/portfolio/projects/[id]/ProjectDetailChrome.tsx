@@ -7,25 +7,27 @@ import {
 } from "@/components/PortfolioChevrons";
 import { PageContent } from "@/components/PageContent";
 import { PortfolioMobileMenu } from "@/components/PortfolioMobileMenu";
-import {
-  ProjectNavigation,
-  type ProjectNavigationItem,
-} from "@/components/ProjectNavigation";
+import { ProjectNavigation } from "@/components/ProjectNavigation";
+import type { PortfolioNavItem } from "@/lib/__portfolioNav";
 import type { PageContentItem } from "@/components/PageContent";
 
-export type ProjectLayoutProps = {
+export type ProjectDetailChromeProps = {
   children: React.ReactNode;
-  navItems: ProjectNavigationItem[];
+  navigation: PortfolioNavItem[];
   pageSections: PageContentItem[];
   activeId: string;
+  prevHref: string | null;
+  nextHref: string | null;
 };
 
-export function ProjectLayout({
+export function ProjectDetailChrome({
   children,
-  navItems,
+  navigation,
   pageSections,
   activeId,
-}: ProjectLayoutProps) {
+  prevHref,
+  nextHref,
+}: ProjectDetailChromeProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
@@ -36,7 +38,7 @@ export function ProjectLayout({
   return (
     <>
       <PortfolioMobileMenu
-        items={navItems}
+        items={navigation}
         activeId={activeId}
         darkTopBar={false}
         isOpen={isMobileMenuOpen}
@@ -56,19 +58,12 @@ export function ProjectLayout({
             aria-label="Project index"
           >
             <div className="row-start-1 row-end-2 pb-6 pl-2">
-              {navItems.length > 0 ? (
-                <ProjectNavigation items={navItems} activeId={activeId} />
-              ) : (
-                <div
-                  className="w-8 h-32 animate-pulse rounded bg-[#2B4673]/10"
-                  aria-hidden
-                />
-              )}
+              <ProjectNavigation navigation={navigation} />
             </div>
           </aside>
 
           <div className="row-start-2 col-start-1 col-end-2 row-end-3 min-h-0 hidden md:flex items-center justify-center">
-            <PortfolioChevronLeft />
+            <PortfolioChevronLeft navigation={navigation} projects />
           </div>
 
           <main
@@ -87,7 +82,7 @@ export function ProjectLayout({
             <PageContent sections={pageSections} />
           </aside>
           <div className="min-h-0 hidden md:flex items-center justify-center row-start-2 col-start-3 row-end-3 ml-auto px-4">
-            <PortfolioChevronRight />
+            <PortfolioChevronRight navigation={navigation} projects />
           </div>
         </div>
       </div>

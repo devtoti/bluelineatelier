@@ -1,7 +1,7 @@
-import "../../../projects.css";
+import "../../../../projects.css";
 import { cacheLife } from "next/cache";
 import { fetchStrapiProjects } from "@/lib/__strapiProjects";
-import { buildProjectNavItems } from "@/lib/__portfolioNav";
+import { buildProjectNavigation } from "@/lib/__portfolioNav";
 import { ProjectNavigation } from "@/components/ProjectNavigation";
 import { ContactInfo } from "@/components/ContactInfo";
 
@@ -9,12 +9,12 @@ export default async function ContactPage() {
   "use cache";
   cacheLife("max");
   const { data } = await fetchStrapiProjects();
-  const projectNavItems = buildProjectNavItems(data);
+  const navigation = buildProjectNavigation(data);
 
   return (
     <div className="back-cover relative min-h-[100svh] w-full font-sans overflow-hidden">
       <div className="fixed bottom-10 left-2 z-20 hidden lg:block">
-        <ProjectNavigation items={projectNavItems} activeId="07" darkBg />
+        <ProjectNavigation navigation={navigation} darkBg />
       </div>
       <div className="relative z-10 px-8 py-12 flex flex-col items-center justify-center min-h-svh">
         <ContactInfo

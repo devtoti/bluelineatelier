@@ -2,7 +2,7 @@ import Link from "next/link";
 import type {
   StrapiProjectsResponse,
   StrapiProjectNode,
-} from "@/lib/__strapiProjects";
+} from "@/lib/__strapiProjectsCore";
 
 function toTwoDigitPcode(value: string | number | undefined): string {
   if (value == null) return "00";

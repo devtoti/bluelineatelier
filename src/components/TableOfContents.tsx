@@ -3,7 +3,7 @@ import Image from "next/image";
 import {
   strapiProjectPcodeSlug,
   type StrapiProjectNode,
-} from "@/lib/__strapiProjects";
+} from "@/lib/__strapiProjectsCore";
 import { getStrapiMedia } from "@/utils/getStrapiMedia";
 import { TableOfContentsGridClient } from "@/components/TableOfContentsGridClient";
 

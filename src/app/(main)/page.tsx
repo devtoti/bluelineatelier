@@ -4,7 +4,6 @@ import Link from "next/link";
 import Image from "next/image";
 
 export default function Home() {
- 
   return (
     <div
       className="relative min-h-screen font-sans"
@@ -20,7 +19,6 @@ export default function Home() {
               <span className="relative inline-block w-5 h-5">
                 <span className="absolute inset-0 flex items-center justify-center w-full h-full">
                   <span className="relative flex items-center justify-center w-full h-full">
-                    {/* Outer circle grows and fades smoothly from center with infinite repeat */}
                     <span className="home-site-progress-outer absolute rounded-full bg-orange-500 opacity-70 pointer-events-none" />
                     <span className="relative z-10 h-3 w-3 rounded-full bg-orange-300 pointer-events-none" />
                   </span>
@@ -42,7 +40,6 @@ export default function Home() {
             href="/portfolio"
             className="mt-10 inline-flex items-center rounded-full bg-white px-6 py-3 text-sm font-medium text-zinc-950 transition-colors hover:bg-zinc-200"
           >
-            {/* Document PDF SVG icon */}
             <svg
               className="mr-2 h-5 w-5 text-zinc-900"
               fill="none"

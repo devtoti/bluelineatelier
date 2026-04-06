@@ -1,16 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { usePathname } from "next/navigation";
 import Link from "next/link";
 
 export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
-  const pathname = usePathname();
-
-  if (pathname?.startsWith("/portfolio/projects/")) {
-    return <nav className="hidden"></nav>;
-  }
 
   return (
     <>

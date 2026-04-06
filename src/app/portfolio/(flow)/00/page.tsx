@@ -1,4 +1,4 @@
-import "../../../projects.css";
+import "../../../../projects.css";
 import { TocProjectsShell } from "./TocProjectsShell";
 
 export default async function TableOfContentsZeroPage() {

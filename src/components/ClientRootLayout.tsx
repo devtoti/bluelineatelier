@@ -2,12 +2,10 @@
 
 import Link from "next/link";
 import { Suspense, useSyncExternalStore } from "react";
-import { usePathname } from "next/navigation";
 import Navbar from "@/components/Navbar";
 
 type ClientRootLayoutProps = {
   children: React.ReactNode;
-  fontClassNames: string;
 };
 
 /**
@@ -23,18 +21,10 @@ function CopyrightYear() {
   return <>{year}</>;
 }
 
-export function ClientRootLayout({
-  children,
-  fontClassNames,
-}: ClientRootLayoutProps) {
-  const pathname = usePathname();
-
-  if (pathname === "/portfolio" || pathname.startsWith("/portfolio/")) {
-    return <>{children}</>;
-  }
-
+/** Navbar + footer for routes under `app/(main)/` only. */
+export function ClientRootLayout({ children }: ClientRootLayoutProps) {
   return (
-    <div className={`${fontClassNames} flex min-h-screen flex-col antialiased`}>
+    <div className="flex min-h-screen flex-col antialiased">
       <div
         className="flex flex-1 flex-col font-sans"
         style={{ backgroundColor: "#0C1222" }}
@@ -48,7 +38,11 @@ export function ClientRootLayout({
       >
         <p suppressHydrationWarning>
           ©{" "}
-          <Suspense fallback={<span className="inline-block min-w-[2ch]" aria-hidden />}>
+          <Suspense
+            fallback={
+              <span className="inline-block min-w-[2ch]" aria-hidden />
+            }
+          >
             <CopyrightYear />
           </Suspense>{" "}
           <Link

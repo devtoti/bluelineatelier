@@ -1,92 +1,19 @@
-import { cacheLife } from "next/cache";
+import { cacheLife, unstable_cache } from "next/cache";
+import type { StrapiProjectsResponse, StrapiProjectNode } from "./__strapiProjectsCore";
+import {
+  readStrapiEnvApiToken,
+  readStrapiEnvBaseUrl,
+} from "./__strapiProjectsCore";
 
-export type StrapiProjectsResponse = {
-  data: StrapiProjectNode[];
-};
+export type { StrapiProjectsResponse, StrapiProjectNode } from "./__strapiProjectsCore";
+export {
+  toTwoDigitPcode,
+  strapiProjectPcodeSlug,
+  findProjectByPcode,
+  readStrapiEnvBaseUrl,
+  readStrapiEnvApiToken,
+} from "./__strapiProjectsCore";
 
-export type StrapiProjectNode = {
-  id?: number;
-  documentId?: string;
-  attributes?: Record<string, unknown>;
-  [key: string]: unknown;
-};
-
-/* -------------------------------------------------------------------------- */
-/* Pure helpers (no I/O)                                                       */
-/* -------------------------------------------------------------------------- */
-
-const SLEEP_DELAY_MS = process.env.NODE_ENV === "development"
-  ? 2000
-  : 30000;
-
-export function toTwoDigitPcode(value: string | number | undefined): string {
-  if (value == null) return "00";
-  const s = String(value).replace(/^0+/, "") || "0";
-  return s.length === 1 ? `0${s}` : s.padStart(2, "0");
-}
-
-export function strapiProjectPcodeSlug(node: StrapiProjectNode): string {
-  const attrs = node.attributes ?? (node as Record<string, unknown>);
-  const raw = attrs?.pcode ?? attrs?.code ?? node.id;
-  if (typeof raw === "string" || typeof raw === "number") {
-    return toTwoDigitPcode(raw);
-  }
-  return toTwoDigitPcode(undefined);
-}
-
-function pcodeFromNode(node: StrapiProjectNode): string {
-  const attrs = node?.attributes ?? (node as Record<string, unknown>);
-  const raw = attrs?.pcode ?? attrs?.code ?? node?.id;
-  if (raw == null) return "";
-  const s = String(raw).replace(/^0+/, "") || "0";
-  return s.length === 1 ? `0${s}` : s.padStart(2, "0");
-}
-
-export function findProjectByPcode(
-  data: StrapiProjectNode[],
-  pcodeVariants: string[],
-): StrapiProjectNode | undefined {
-  const set = new Set(pcodeVariants);
-  return data.find((node) => set.has(pcodeFromNode(node)));
-}
-
-/* -------------------------------------------------------------------------- */
-/* Env (no HTTP, no Next fetch cache)                                          */
-/* -------------------------------------------------------------------------- */
-
-/** Local Strapi: `next dev`, or `STRAPI_USE_LOCAL=1` (e.g. `next build` against localhost). */
-function strapiLocal(): boolean {
-  return (
-    process.env.NODE_ENV === "development" ||
-    process.env.STRAPI_USE_LOCAL === "1"
-  );
-}
-
-/** Strapi origin from env; does not perform network I/O. */
-export function readStrapiEnvBaseUrl(): string {
-  const url = strapiLocal()
-    ? (process.env.STRAPI_LOCAL_URL ?? "http://localhost:1337")
-    : process.env.NEXT_PUBLIC_STRAPI_URL;
-  return String(url).replace(/\/$/, "");
-}
-
-/** API token from env; does not perform network I/O. */
-export function readStrapiEnvApiToken(): string {
-  const token = strapiLocal()
-    ? process.env.NEXT_PUBLIC_STRAPI_DEV_API_TOKEN
-    : process.env.NEXT_PUBLIC_STRAPI_API_TOKEN;
-  if (!token) throw new Error("Strapi API token is not defined");
-  return token;
-}
-
-/* -------------------------------------------------------------------------- */
-/* Strapi list — `GET /api/projects?populate=*` (single source of truth)       */
-/* -------------------------------------------------------------------------- */
-
-/**
- * Parses Strapi JSON from `res.text()`. Throws with context on bad status,
- * HTML error pages, invalid JSON, or non-object root (Strapi uses `{ data: ... }`).
- */
 function parseStrapiJson(text: string, res: Response): Record<string, unknown> {
   if (!res.ok) {
     const preview = text.replace(/\s+/g, " ").trim().slice(0, 240);
@@ -134,7 +61,7 @@ async function fetchStrapiProjectsOnce(
     ...fetchInit,
     headers: {
       Authorization: `Bearer ${apiToken}`,
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
     },
   });
 
@@ -152,9 +79,6 @@ async function fetchStrapiProjectsOnce(
   return { data: arr };
 }
 
-/**
- * Cached list — build / SSG / {@link getStrapiProjects}.
- */
 export async function fetchStrapiProjects(): Promise<StrapiProjectsResponse> {
   "use cache";
   cacheLife("hours");
@@ -163,6 +87,8 @@ export async function fetchStrapiProjects(): Promise<StrapiProjectsResponse> {
 
 const STRAPI_MAX_ATTEMPTS = 3;
 const STRAPI_DELAY_MS = 3000;
+const SLEEP_DELAY_MS =
+  process.env.NODE_ENV === "development" ? 2000 : 30000;
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => {
@@ -170,24 +96,15 @@ function sleep(ms: number): Promise<void> {
   });
 }
 
-/**
- * Same list with retries for transient failures (runtime pages, server actions).
- */
-export async function getStrapiProjects(): Promise<StrapiProjectsResponse> {
+export async function fetchStrapiProjectsUncached(): Promise<StrapiProjectsResponse> {
   await wakeStrapi();
-  await sleep(SLEEP_DELAY_MS)
-  // console.log('initiateStrapiWarming', initiateStrapiWarming, SLEEP_DELAY_MS);
+  await sleep(SLEEP_DELAY_MS);
   const isStrapiWarmedUp = await wakeStrapi();
   if (!isStrapiWarmedUp.ok) {
     throw new Error(`Strapi is not warmed up: ${isStrapiWarmedUp.statusText}`);
   }
-  console.log('isStrapiWarmedUp', isStrapiWarmedUp);
   let lastError: unknown;
-  for (
-    let attempt = 1;
-    attempt <= STRAPI_MAX_ATTEMPTS;
-    attempt++
-  ) {
+  for (let attempt = 1; attempt <= STRAPI_MAX_ATTEMPTS; attempt++) {
     try {
       return await fetchStrapiProjects();
     } catch (err) {
@@ -204,28 +121,34 @@ export async function getStrapiProjects(): Promise<StrapiProjectsResponse> {
     `getStrapiProjects failed after: ${STRAPI_MAX_ATTEMPTS} attempts: ${String(lastError)}`,
   );
 }
+export const getStrapiProjects = unstable_cache(
+  fetchStrapiProjectsUncached,
+  ['strapi-projects'],           // cache key
+  {
+    revalidate: 6000,              // revalidate every 60s
+    tags: ['strapi-projects'],   // lets you call revalidateTag('strapi-projects') on demand
+  }
+)
 
-export async function wakeStrapi() {
+/** Warm-up ping; not cached — must return plain data (never `Response`) for RSC/cache safety. */
+export async function wakeStrapi(): Promise<{ ok: boolean; statusText: string }> {
   try {
     const response = await fetch(`${readStrapiEnvBaseUrl()}/api/about`, {
-      method: 'GET',
+      method: "GET",
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${readStrapiEnvApiToken()}`,
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${readStrapiEnvApiToken()}`,
       },
     });
 
     if (!response.ok) {
       throw new Error(`Failed to wake Strapi: ${response.statusText}`);
     }
-    return new Response(JSON.stringify({ message: 'Strapi is warmed up!' }), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    return { ok: true, statusText: response.statusText || "OK" };
   } catch (error) {
-    return new Response(JSON.stringify({ message: error instanceof Error ? error.message : String(error) }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    return {
+      ok: false,
+      statusText: error instanceof Error ? error.message : String(error),
+    };
   }
 }

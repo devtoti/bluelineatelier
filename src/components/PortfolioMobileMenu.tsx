@@ -3,6 +3,10 @@
 import Link from "next/link";
 import { FiMenu, FiX, FiDownload } from "react-icons/fi";
 import type { ProjectNavigationItem } from "@/components/ProjectNavigation";
+import {
+  buildProjectNavigation,
+  navItemIsActive,
+} from "@/lib/__portfolioNav";
 
 const ARCHITECT_CV_URL = "/docs/antonio-ruiz-architect-cv.pdf";
 const FRONTEND_CV_URL = "/docs/antonio-ruiz-frontend-cv.pdf";
@@ -29,12 +33,11 @@ export function PortfolioMobileMenu({
   const hasProjectNav =
     items === undefined ||
     (Array.isArray(items) && items.length > 0);
-  const list = items ?? [];
-  const normalizedActive = activeId.replace(/^0+/, "") || "0";
-  const activePcode =
-    normalizedActive.length === 1
-      ? `0${normalizedActive}`
-      : normalizedActive.padStart(2, "0");
+  const list =
+    items === undefined ? buildProjectNavigation([]) : (items ?? []);
+  const intro = list.filter((i) => i.group === "intro");
+  const projectItems = list.filter((i) => i.group === "projects");
+  const outro = list.filter((i) => i.group === "outro");
   const linkBase =
     "flex h-9 w-full items-center gap-2  px-3 py-2 text-left text-sm font-medium transition-colors";
   const linkActive = "bg-white/10 text-white";
@@ -119,26 +122,15 @@ export function PortfolioMobileMenu({
                 aria-label="Project navigation"
                 className="flex flex-col gap-1"
               >
-                {mobileNavEntry(
-                  "cover",
-                  "CR",
-                  "Cover",
-                  "/portfolio",
-                  activeId === "cover",
+                {intro.map((item) =>
+                  mobileNavEntry(
+                    item.id,
+                    item.label,
+                    item.name,
+                    item.href,
+                    navItemIsActive(item, activeId),
+                  ),
                 )}
-                {list
-                  .filter(({ id }) => id === "00")
-                  .map(({ id, name, href }) => {
-                    const linkHref = href ?? "/portfolio/00";
-                    const isActive = id === activePcode || activeId === id;
-                    return mobileNavEntry(
-                      "00",
-                      "00",
-                      name || "Table of contents",
-                      linkHref,
-                      isActive,
-                    );
-                  })}
                 <div className="border border-dashed border-[#53A4D7] py-2 my-2 px-2 space-y-4">
                   {isLoadingNav && (
                     <div className="flex flex-row gap-4 justify-center items-center px-3 py-2">
@@ -151,22 +143,24 @@ export function PortfolioMobileMenu({
                       </span>
                     </div>
                   )}
-                  {list
-                    .filter(({ id }) =>
-                      ["01", "02", "03", "04", "05", "06"].includes(id),
-                    )
-                    .map(({ id, name, href }) => {
-                      const isActive = id === activePcode || activeId === id;
-                      const linkHref = href ?? `/portfolio/projects/${id}`;
-                      return mobileNavEntry(id, id, name, linkHref, isActive);
-                    })}
+                  {projectItems.map((item) =>
+                    mobileNavEntry(
+                      item.id,
+                      item.label,
+                      item.name,
+                      item.href,
+                      navItemIsActive(item, activeId),
+                    ),
+                  )}
                 </div>
-                {mobileNavEntry(
-                  "07",
-                  "CT",
-                  "Contact",
-                  "/portfolio/contact",
-                  activeId === "07",
+                {outro.map((item) =>
+                  mobileNavEntry(
+                    item.id,
+                    item.label,
+                    item.name,
+                    item.href,
+                    navItemIsActive(item, activeId),
+                  ),
                 )}
               </nav>
               <div className="mt-4 pt-4 border-t border-white/20 flex flex-col gap-2">

@@ -2,7 +2,7 @@
 
 import type { ReactNode } from "react";
 import { ProjectContext } from "@/app/context/projectContext";
-import type { StrapiProjectsResponse } from "@/lib/__strapiProjects";
+import type { StrapiProjectsResponse } from "@/lib/__strapiProjectsCore";
 
 type ProjectProviderProps = {
   children: ReactNode;
