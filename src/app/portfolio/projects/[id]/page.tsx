@@ -15,7 +15,6 @@ import {
 import { buildProjectPageData } from "./buildProjectPageData";
 import { ProjectDetailContent } from "./ProjectDetailContent";
 import { ProjectDetailChrome } from "./ProjectDetailChrome";
-import { cacheLife } from "next/cache";
 type ProjectPageProps = {
   params: Promise<{ id: string }>;
 };

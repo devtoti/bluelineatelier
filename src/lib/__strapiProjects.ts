@@ -1,4 +1,4 @@
-import { cacheLife, unstable_cache } from "next/cache";
+import { cacheLife } from "next/cache";
 import type { StrapiProjectsResponse, StrapiProjectNode } from "./__strapiProjectsCore";
 import {
   readStrapiEnvApiToken,
@@ -90,7 +90,7 @@ function sleep(ms: number): Promise<void> {
   });
 }
 
-export async function fetchStrapiProjectsUncached(): Promise<StrapiProjectsResponse> {
+export async function getStrapiProjects(): Promise<StrapiProjectsResponse> {
   "use cache";
   cacheLife("hours");
   await wakeStrapi();
@@ -117,14 +117,6 @@ export async function fetchStrapiProjectsUncached(): Promise<StrapiProjectsRespo
     `getStrapiProjects failed after: ${STRAPI_MAX_ATTEMPTS} attempts: ${String(lastError)}`,
   );
 }
-export const getStrapiProjects = unstable_cache(
-  fetchStrapiProjectsUncached,
-  ['strapi-projects'],           // cache key
-  {
-    revalidate: 6000,              // revalidate every 60s
-    tags: ['strapi-projects'],   // lets you call revalidateTag('strapi-projects') on demand
-  }
-)
 
 /** Warm-up ping; not cached — must return plain data (never `Response`) for RSC/cache safety. */
 export async function wakeStrapi(): Promise<{ ok: boolean; statusText: string }> {
