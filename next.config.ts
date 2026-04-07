@@ -2,6 +2,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   cacheComponents: true,
+  staticPageGenerationTimeout: 300,
   images: {
     remotePatterns: [
       {
