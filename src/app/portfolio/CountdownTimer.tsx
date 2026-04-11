@@ -2,9 +2,6 @@
 
 import { useEffect, useState } from "react";
 
-/** Launch instant (ms) — module scope avoids `new Date()` during render. */
-const LAUNCH_END_MS = Date.parse("2026-03-08T00:00:00-06:00");
-
 /** Called only from `useEffect` — not during SSR/prerender. */
 function getTimeLeft(endMs: number) {
   const now = Date.now();
@@ -33,6 +30,9 @@ function useCountdown(endMs: number) {
 
   return timeLeft;
 }
+
+/** Epoch ms for launch — `Date.parse` on a static literal is deterministic (no `Date.now()`). */
+const LAUNCH_END_MS = Date.parse("2026-03-08T00:00:00-06:00");
 
 export default function CountdownTimer() {
   const { days, hours, minutes, seconds } = useCountdown(LAUNCH_END_MS);

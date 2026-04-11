@@ -77,5 +77,12 @@ export function PortfolioPageAnimations({
     }, rootRef);
     return () => ctx.revert();
   }, []);
-  return <div ref={rootRef}>{children}</div>;
+  return (
+    <div
+      ref={rootRef}
+      className="w-full min-w-0 pointer-events-none display-contents contents [&_a,&_button,&_canvas]:pointer-events-auto"
+    >
+      {children}
+    </div>
+  );
 }
